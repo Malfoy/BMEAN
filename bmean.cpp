@@ -206,14 +206,37 @@ vector<kmer> longest_ordered_chain( kmer2localisation& kmer_index,const vector<k
 
 
 
+double mean(const vector<uint32_t>& V){
+	double first_mean(0);
+	uint32_t valid(0);
+	for(uint32_t i(0);i<V.size();++i){
+		first_mean+=V[i];
+	}
+	first_mean/=V.size();
+	double second_mean(0);
+	for(uint32_t i(0);i<V.size();++i){
+		if(abs((double)V[i]-first_mean)<first_mean*0.5){
+			second_mean+=V[i];
+			valid++;
+		}
+	}
+	if(valid!=0){
+		second_mean/=valid;
+	}else{
+		return first_mean;
+	}
+	return second_mean;
+}
+
+
 vector<double> average_distance_next_anchor(kmer2localisation& kmer_index,  vector<kmer>& anchors,unordered_map<kmer,uint32_t>& k_count, bool clean){
 	vector<double> result;
-	vector<uint32_t> v_sum;
-	vector<uint32_t> v_count;
+
 	vector<kmer> curated_anchors;
 	uint32_t min_distance(5);
 
 	for(uint i(0);i+1<anchors.size();++i){
+		vector<uint32_t> v_dis;
 		uint32_t sum(0),count(0);
 		auto v_loc1(kmer_index[anchors[i]]);//THEY SHOULD BE READS SORTED
 		auto v_loc2(kmer_index[anchors[i+1]]);
@@ -222,8 +245,7 @@ vector<double> average_distance_next_anchor(kmer2localisation& kmer_index,  vect
 		uint32_t i1(0),i2(0);
 		while(i1<v_loc1.size() and i2<v_loc2.size()){
 			if(v_loc1[i1].read_id==v_loc2[i2].read_id){
-				sum+=v_loc2[i2].position-v_loc1[i1].position;
-				++count;
+				v_dis.push_back(v_loc2[i2].position-v_loc1[i1].position);
 				++i1;
 				++i2;
 			}else if(v_loc1[i1].read_id<v_loc2[i2].read_id){
@@ -232,15 +254,16 @@ vector<double> average_distance_next_anchor(kmer2localisation& kmer_index,  vect
 				i2++;
 			}
 		}
-		if(count!=0){
-			v_sum.push_back(sum);
-			v_count.push_back(count);
+		result.push_back(mean(v_dis));
+		//~ if(count!=0){
+			//~ v_sum.push_back(sum);
+			//~ v_count.push_back(count);
 
-			result.push_back(sum/count);
-		}else{
-			cout<<"SHOULD NOT HAPPEND"<<endl;cin.get();
-			result.push_back(-1);
-		}
+			//~ result.push_back(sum/count);
+		//~ }else{
+			//~ cout<<"SHOULD NOT HAPPEND"<<endl;cin.get();
+			//~ result.push_back(-1);
+		//~ }
 	}
 
 	if(clean){
@@ -328,6 +351,10 @@ vector<vector<string>> split_reads_old(const vector<kmer>& anchors, const vector
 
 vector<vector<string>> split_reads(const vector<kmer>& anchors, const vector<double>& relative_positions, const vector<string>& Reads,  kmer2localisation& kmer_index,uint32_t kmer_size){
 	vector<vector<string>> result(anchors.size()+1);
+	if(anchors.size()==0){
+		result.push_back(Reads);
+		return result;
+	}
 	for(uint32_t iR(0);iR<Reads.size();++iR){
 		string read=Reads[iR];
 		vector<string> split(anchors.size()+1);
@@ -349,12 +376,19 @@ vector<vector<string>> split_reads(const vector<kmer>& anchors, const vector<dou
 					//REGION WITH BOtH ANCHORS
 					//~ cout<<1<<endl;
 					//~ cout<<iA+1<<" "<<result.size()<<" "<<anchor_position1<<endl;
-					result[iA+1].push_back(read.substr(anchor_position1,anchor_position2-anchor_position1));
+					string chunk(read.substr(anchor_position1,anchor_position2-anchor_position1));
+					if(abs((int)chunk.size()-relative_positions[iA])<relative_positions[iA]*0.5){
+						result[iA+1].push_back(chunk);
+					}
 					//~ cout<<12<<endl;
 				}else{
 					//GOT THE LEFT ANCHOR
 					//~ cout<<2<<endl;
-					result[iA+1].push_back(read.substr(anchor_position1,relative_positions[iA]));
+					string chunk(read.substr(anchor_position1,relative_positions[iA]));
+					if(abs((int)chunk.size()-relative_positions[iA])<relative_positions[iA]*0.5){
+						result[iA+1].push_back(chunk);
+					}
+					//~ result[iA+1].push_back(read.substr(anchor_position1,relative_positions[iA]));
 					//~ cout<<22<<endl;
 				}
 			}else{
@@ -362,7 +396,11 @@ vector<vector<string>> split_reads(const vector<kmer>& anchors, const vector<dou
 					//GOT THE RIGHT ANCHOR
 					if(anchor_position2>relative_positions[iA]){
 						//~ cout<<3<<endl;
-						result[iA+1].push_back(read.substr(anchor_position2-relative_positions[iA],relative_positions[iA]));
+						string chunk(read.substr(anchor_position2-relative_positions[iA],relative_positions[iA]));
+						if(abs((int)chunk.size()-relative_positions[iA])<relative_positions[iA]*0.5){
+						result[iA+1].push_back(chunk);
+					}
+						//~ result[iA+1].push_back(read.substr(anchor_position2-relative_positions[iA],relative_positions[iA]));
 						//~ cout<<32<<endl;
 					}
 				}
@@ -381,23 +419,23 @@ vector<vector<string>> MSABMAAC(const vector<string>& Reads,uint32_t k, double p
 
 	kmer2localisation kmer_index;
 	fill_index_kmers(Reads,kmer_index,kmer_size);
-	//~ cout<<"PHASE 1 done"<<endl;
+	cout<<"PHASE 1 done"<<endl;
 
 	auto kmer_count(filter_index_kmers(kmer_index,percent_shared*(double)Reads.size()));
-	//~ cout<<"PHASE 2.1 done"<<endl;
+	cout<<"PHASE 2.1 done"<<endl;
 	auto template_read(get_template(kmer_index,Reads[0],kmer_size));
-	//~ cout<<"PHASE 2 done"<<endl;
+	cout<<"PHASE 2 done"<<endl;
 
 	vector<kmer> anchors(longest_ordered_chain(kmer_index, template_read));
-	//~ cout<<"PHASE 3 done"<<endl;
+	cout<<"PHASE 3 done"<<endl;
 
 	//~ vector<double> relative_positions(average_distance_next_anchor(kmer_index,anchors,kmer_count,true));
 	//~ relative_positions=(average_distance_next_anchor(kmer_index,anchors,kmer_count,true));
 	vector<double> relative_positions=(average_distance_next_anchor(kmer_index,anchors,kmer_count,false));
-	//~ cout<<"PHASE 4 done"<<endl;
+	cout<<"PHASE 4 done"<<endl;
 
 	vector<vector<string>> result(split_reads(anchors,relative_positions,Reads,kmer_index,kmer_size));
-	//~ cout<<"PHASE 5 done"<<endl;
+	cout<<"PHASE 5 done"<<endl;
 
 	return result;
 }
