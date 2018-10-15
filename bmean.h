@@ -13,7 +13,7 @@ using namespace std;
 
 
 
-vector<vector<string>> MSABMAAC(const vector<string>& nadine,uint32_t cuisine);
+vector<vector<string>> MSABMAAC(const vector<string>& nadine,uint32_t la,double cuisine);
 
 
 

@@ -284,7 +284,7 @@ int32_t get_position(kmer2localisation& kmer_index,kmer query, uint32_t read_id)
 
 
 
-vector<vector<string>> split_reads(const vector<kmer>& anchors, const vector<double>& relative_positions, const vector<string>& Reads,  kmer2localisation& kmer_index,uint32_t kmer_size){
+vector<vector<string>> split_reads_old(const vector<kmer>& anchors, const vector<double>& relative_positions, const vector<string>& Reads,  kmer2localisation& kmer_index,uint32_t kmer_size){
 	vector<vector<string>> result;
 	for(uint32_t iR(0);iR<Reads.size();++iR){
 		string read=Reads[iR];
@@ -326,9 +326,57 @@ vector<vector<string>> split_reads(const vector<kmer>& anchors, const vector<dou
 
 
 
-vector<vector<string>> MSABMAAC(const vector<string>& Reads,uint32_t k){
+vector<vector<string>> split_reads(const vector<kmer>& anchors, const vector<double>& relative_positions, const vector<string>& Reads,  kmer2localisation& kmer_index,uint32_t kmer_size){
+	vector<vector<string>> result(anchors.size()+1);
+	for(uint32_t iR(0);iR<Reads.size();++iR){
+		string read=Reads[iR];
+		vector<string> split(anchors.size()+1);
+		//FIRST AND LAST REGION
+		int32_t anchor_position(get_position(kmer_index,anchors[0],iR));
+		if(anchor_position!=-1){
+			result[0].push_back(read.substr(0,anchor_position));
+		}
+		anchor_position=(get_position(kmer_index,anchors[anchors.size()-1],iR));
+		if(anchor_position!=-1){
+			result[anchors.size()].push_back(read.substr(anchor_position));
+		}
+		//~ cout<<"INIT DONE"<<endl;
+		for(uint32_t iA(0);iA+1<anchors.size();++iA){
+			int32_t anchor_position1(get_position(kmer_index,anchors[iA],iR));
+			int32_t anchor_position2(get_position(kmer_index,anchors[iA+1],iR));
+			if(anchor_position1!=-1){
+				if(anchor_position2!=-1){
+					//REGION WITH BOtH ANCHORS
+					//~ cout<<1<<endl;
+					//~ cout<<iA+1<<" "<<result.size()<<" "<<anchor_position1<<endl;
+					result[iA+1].push_back(read.substr(anchor_position1,anchor_position2-anchor_position1));
+					//~ cout<<12<<endl;
+				}else{
+					//GOT THE LEFT ANCHOR
+					//~ cout<<2<<endl;
+					result[iA+1].push_back(read.substr(anchor_position1,relative_positions[iA]));
+					//~ cout<<22<<endl;
+				}
+			}else{
+				if(anchor_position2!=-1){
+					//GOT THE RIGHT ANCHOR
+					if(anchor_position2>relative_positions[iA]){
+						//~ cout<<3<<endl;
+						result[iA+1].push_back(read.substr(anchor_position2-relative_positions[iA],relative_positions[iA]));
+						//~ cout<<32<<endl;
+					}
+				}
+			}
+		}
+		//~ result.push_back(split);
+	}
+	return result;
+}
+
+
+
+vector<vector<string>> MSABMAAC(const vector<string>& Reads,uint32_t k, double percent_shared){
 	int kmer_size(k);
-	double percent_shared(0.6);
 
 
 	kmer2localisation kmer_index;

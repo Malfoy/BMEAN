@@ -126,7 +126,8 @@ string mutate(string& read, int n){
 	for(int i(0); i<n; ++i){
 		int position(rand()%read.size());
 		int mutation_type(rand()%3);
-		if(mutation_type==0){
+		//~ if(mutation_type==0){
+		if(mutation_type<4){
 			read[position]=randNuc();
 		}else if (mutation_type==1){
 			read=read.substr(0,position)+read.substr(position+1);
