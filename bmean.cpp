@@ -206,27 +206,77 @@ vector<kmer> longest_ordered_chain( kmer2localisation& kmer_index,const vector<k
 
 
 
-double mean(const vector<uint32_t>& V){
-	double first_mean(0);
-	uint32_t valid(0);
-	for(uint32_t i(0);i<V.size();++i){
-		first_mean+=V[i];
-	}
-	first_mean/=V.size();
-	double second_mean(0);
-	for(uint32_t i(0);i<V.size();++i){
-		if(abs((double)V[i]-first_mean)<first_mean*0.5){
-			second_mean+=V[i];
-			valid++;
+bool comparable(double x, pair<double,double> deciles){
+	//~ return true;
+	if(x<deciles.second+5){
+		//RIGHT IS OK
+		if(x>deciles.first-5){
+			return true;
 		}
-	}
-	if(valid!=0){
-		second_mean/=valid;
+		if(x/deciles.first<0.5){
+			return false;
+		}
+		return true;
 	}else{
-		return first_mean;
+		//RIGHT IS NOT OK
+		//~ if(x/deciles.second>2){
+			//~ return false;
+		//~ }
+		//~ if(x>deciles.first-5){
+			//~ return true;
+		//~ }
+		if(x/deciles.second>2){
+			return false;
+		}
+		return true;
 	}
-	return second_mean;
 }
+
+
+
+bool comparable(double x,double mean){
+	//~ return true;
+	if(abs(x-mean)<5){
+		return true;
+	}
+	if(x/mean<0.5 or x/mean>2){
+		return false;
+	}
+	return true;
+}
+
+
+
+//~ double mean(const vector<uint32_t>& V){
+	//~ double first_mean(0);
+	//~ uint32_t valid(0);
+	//~ for(uint32_t i(0);i<V.size();++i){
+		//~ first_mean+=V[i];
+	//~ }
+	//~ first_mean/=V.size();
+	//~ return first_mean;
+	//~ double second_mean(0);
+	//~ for(uint32_t i(0);i<V.size();++i){
+		//~ if(comparable((double)V[i],first_mean)){
+			//~ second_mean+=V[i];
+			//~ valid++;
+		//~ }
+	//~ }
+	//~ if(valid!=0){
+		//~ second_mean/=valid;
+	//~ }else{
+		//~ return first_mean;
+	//~ }
+	//~ return second_mean;
+//~ }
+
+
+
+pair<double,double> deciles( vector<uint32_t>& V){
+	sort(V.begin(),V.end());
+	return {V[floor(V.size()*0.2)],V[ceil(V.size()*0.8)]};
+}
+
 
 
 vector<double> average_distance_next_anchor(kmer2localisation& kmer_index,  vector<kmer>& anchors,unordered_map<kmer,uint32_t>& k_count, bool clean){
@@ -254,7 +304,18 @@ vector<double> average_distance_next_anchor(kmer2localisation& kmer_index,  vect
 				i2++;
 			}
 		}
-		result.push_back(mean(v_dis));
+		//~ if(v_dis.empty()){
+		//~ }
+		auto dec(deciles(v_dis));
+		for(uint32_t iD(0);iD<v_dis.size();++iD){
+			if(comparable(v_dis[iD],dec)){
+				sum+=v_dis[iD];
+				count++;
+			}
+		}
+		//~ if(count==0){
+		//~ }
+		result.push_back(sum/count);
 		//~ if(count!=0){
 			//~ v_sum.push_back(sum);
 			//~ v_count.push_back(count);
@@ -266,28 +327,28 @@ vector<double> average_distance_next_anchor(kmer2localisation& kmer_index,  vect
 		//~ }
 	}
 
-	if(clean){
-		for(uint32_t i(0);i+1<anchors.size();++i){
-			if(result[i]<min_distance){
-				kmer heaviest_anchor(anchors[i]);
-				uint32_t weight(k_count[anchors[i]]);
-				double new_distance(0);
-				while(i+1<anchors.size() and new_distance<min_distance){
-					++i;
-					if(weight<=k_count[anchors[i]]){
-						weight=k_count[anchors[i]];
-						heaviest_anchor=(anchors[i]);
-					}
-					new_distance+=result[i-1];
-				}
-				curated_anchors.push_back(heaviest_anchor);
+	//~ if(clean){
+		//~ for(uint32_t i(0);i+1<anchors.size();++i){
+			//~ if(result[i]<min_distance){
+				//~ kmer heaviest_anchor(anchors[i]);
+				//~ uint32_t weight(k_count[anchors[i]]);
+				//~ double new_distance(0);
+				//~ while(i+1<anchors.size() and new_distance<min_distance){
+					//~ ++i;
+					//~ if(weight<=k_count[anchors[i]]){
+						//~ weight=k_count[anchors[i]];
+						//~ heaviest_anchor=(anchors[i]);
+					//~ }
+					//~ new_distance+=result[i-1];
+				//~ }
+				//~ curated_anchors.push_back(heaviest_anchor);
 
-			}else{
-				curated_anchors.push_back(anchors[i]);
-			}
-		}
-		anchors=curated_anchors;
-	}
+			//~ }else{
+				//~ curated_anchors.push_back(anchors[i]);
+			//~ }
+		//~ }
+		//~ anchors=curated_anchors;
+	//~ }
 
 
 	return result;
@@ -361,52 +422,128 @@ vector<vector<string>> split_reads(const vector<kmer>& anchors, const vector<dou
 		//FIRST AND LAST REGION
 		int32_t anchor_position(get_position(kmer_index,anchors[0],iR));
 		if(anchor_position!=-1){
-			result[0].push_back(read.substr(0,anchor_position));
+			string chunk(read.substr(0,anchor_position));
+			//~ if(abs((int)chunk.size()-relative_positions[iA])<relative_positions[iA]*0.5){
+				result[0].push_back(chunk);
+			//~ }
 		}
 		anchor_position=(get_position(kmer_index,anchors[anchors.size()-1],iR));
 		if(anchor_position!=-1){
-			result[anchors.size()].push_back(read.substr(anchor_position));
+			string chunk(read.substr(anchor_position));
+			//~ if(abs((int)chunk.size()-relative_positions[iA])<relative_positions[iA]*0.5){
+				result[anchors.size()].push_back(chunk);
+			//~ }
 		}
-		//~ cout<<"INIT DONE"<<endl;
 		for(uint32_t iA(0);iA+1<anchors.size();++iA){
 			int32_t anchor_position1(get_position(kmer_index,anchors[iA],iR));
 			int32_t anchor_position2(get_position(kmer_index,anchors[iA+1],iR));
 			if(anchor_position1!=-1){
 				if(anchor_position2!=-1){
 					//REGION WITH BOtH ANCHORS
-					//~ cout<<1<<endl;
-					//~ cout<<iA+1<<" "<<result.size()<<" "<<anchor_position1<<endl;
 					string chunk(read.substr(anchor_position1,anchor_position2-anchor_position1));
-					if(abs((int)chunk.size()-relative_positions[iA])<relative_positions[iA]*0.5){
+					//~ if(abs((int)chunk.size()-relative_positions[iA])<relative_positions[iA]*0.5){
+					if(comparable(chunk.size(), relative_positions[iA])){
 						result[iA+1].push_back(chunk);
+					}else{
+						//~ cout<<"ALIEN"<<endl;
+						//~ cout<<chunk.size()<<" "<<relative_positions[iA]<<endl;
 					}
-					//~ cout<<12<<endl;
 				}else{
+					//~ continue;
 					//GOT THE LEFT ANCHOR
-					//~ cout<<2<<endl;
 					string chunk(read.substr(anchor_position1,relative_positions[iA]));
 					if(abs((int)chunk.size()-relative_positions[iA])<relative_positions[iA]*0.5){
 						result[iA+1].push_back(chunk);
+					}else{
+						//~ cout<<"ALIEN32"<<endl;
 					}
-					//~ result[iA+1].push_back(read.substr(anchor_position1,relative_positions[iA]));
-					//~ cout<<22<<endl;
 				}
 			}else{
 				if(anchor_position2!=-1){
+					//~ continue;
 					//GOT THE RIGHT ANCHOR
 					if(anchor_position2>relative_positions[iA]){
-						//~ cout<<3<<endl;
 						string chunk(read.substr(anchor_position2-relative_positions[iA],relative_positions[iA]));
 						if(abs((int)chunk.size()-relative_positions[iA])<relative_positions[iA]*0.5){
-						result[iA+1].push_back(chunk);
-					}
-						//~ result[iA+1].push_back(read.substr(anchor_position2-relative_positions[iA],relative_positions[iA]));
-						//~ cout<<32<<endl;
+							result[iA+1].push_back(chunk);
+
+						}else{
+							//~ cout<<"ALIEN23"<<endl;
+						}
 					}
 				}
 			}
 		}
-		//~ result.push_back(split);
+	}
+	return result;
+}
+
+
+
+vector<string> easy_consensus(const vector<string>& V){
+	if(V.size()<2){return V;}
+	for(uint32_t iV(1);iV<V.size();++iV){
+		if(V[iV].size()!=V[0].size()){
+			return V;
+		}
+	}
+	string result;
+	for(uint32_t iS(0);iS<V[0].size();++iS){
+		uint32_t cA,cC,cG,cT;
+		cA=cC=cG=cT=0;
+		for(uint32_t iV(0);iV<V.size();++iV){
+			switch(V[iV][iS]){
+				case 'A': ++cA;break;
+				case 'C': ++cC;break;
+				case 'G': ++cG;break;
+				case 'T': ++cT;break;
+				default: cout<<"NOPE"<<endl;
+			}
+		}
+		if(cA>cC and cA>cG and cA>cT){
+			result+=('A');
+			continue;
+		}
+		if(cC>cA and cC>cG and cC>cT){
+			result+=('C');
+			continue;
+		}
+		if(cG>cA and cG>cC and cG>cT){
+			result+=('G');
+			continue;
+		}
+		if(cT>cA and cT>cG and cT>cC){
+			result+=('T');
+			continue;
+			}
+		return V;
+	}
+	return {result};
+}
+
+
+
+
+vector<vector<string>> global_consensus(const vector<vector<string>>& V){
+	vector<vector<string>> result;
+	string stacked_consensus;
+	for(uint32_t iV(0);iV<V.size();++iV){
+		if(V[iV].size()==0){
+		}
+		vector<string> consensus(easy_consensus(V[iV]));
+		if(consensus.size()==1){
+			stacked_consensus+=consensus[0];
+		}else{
+			if(stacked_consensus.size()!=0){
+				result.push_back({stacked_consensus});
+				stacked_consensus="";
+			}
+			result.push_back(consensus);
+		}
+	}
+	if(stacked_consensus.size()!=0){
+		result.push_back({stacked_consensus});
+		stacked_consensus="";
 	}
 	return result;
 }
@@ -429,13 +566,14 @@ vector<vector<string>> MSABMAAC(const vector<string>& Reads,uint32_t k, double p
 	vector<kmer> anchors(longest_ordered_chain(kmer_index, template_read));
 	cout<<"PHASE 3 done"<<endl;
 
-	//~ vector<double> relative_positions(average_distance_next_anchor(kmer_index,anchors,kmer_count,true));
-	//~ relative_positions=(average_distance_next_anchor(kmer_index,anchors,kmer_count,true));
 	vector<double> relative_positions=(average_distance_next_anchor(kmer_index,anchors,kmer_count,false));
 	cout<<"PHASE 4 done"<<endl;
 
 	vector<vector<string>> result(split_reads(anchors,relative_positions,Reads,kmer_index,kmer_size));
 	cout<<"PHASE 5 done"<<endl;
+
+
+	result=global_consensus(result);
 
 	return result;
 }

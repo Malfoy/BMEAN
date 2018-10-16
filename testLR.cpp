@@ -40,21 +40,25 @@ int main(int argc, char ** argv){
 	srand (time(NULL));
 
 
-	input.push_back("TAAAATCCCCTTTGGGGT");
-	input.push_back("GAAAAGCCCCCCCGGGGA");
-	input.push_back("GAAAAGCACCAAAGGGGC");
-	auto result(MSABMAAC(input,9,0.5));
+	//~ input.push_back("TAAAATCCCCTTTGGGGT");
+	//~ input.push_back("GAAAAGCCCCCCCGGGGA");
+	//~ input.push_back("GAAAAGCACCAAAGGGGC");
+	//~ auto result(MSABMAAC(input,9,0.5));
 
 
 
-	//~ string str(rand_seq(1000));
-	//~ input.push_back(str);
-	//~ for(uint i(0);i<50;++i){
-		//~ string str_mut(str);
-		//~ mutate(str_mut,str_mut.size()*10/100);
-		//~ input.push_back(str_mut);
-	//~ }
-	//~ auto result(MSABMAAC(input,8,0.6));
+	string str(rand_seq(1000));
+	cout<<str<<endl;
+	for(uint i(0);i<50;++i){
+		string str_mut(str);
+		mutate(str_mut,str_mut.size()*10/100);
+		input.push_back(str_mut);
+	}
+	auto result(MSABMAAC(input,8,0.6));
+	cout<<"==========================================================="<<endl;
+	cout<<"================THE END===================================="<<endl;
+	cout<<"==========================================================="<<endl;
+
 
 
 
@@ -66,11 +70,19 @@ int main(int argc, char ** argv){
 		//~ cout<<endl;
 	//~ }
 	cout<<result.size()<<endl<<endl;
+	uint32_t total_size(0);
 	for(uint32_t iR(0);iR<result.size();++iR){
 		cout<<"-----------------------------------------------------------------------------------------------------------------------------------------"<<endl;
-		for(uint32_t is(0);is<result[iR].size();++is){
-			cout<<result[iR][is]<<endl;
+		if(result[iR].size()==0){
+			cout<<"WTF de NADINE au FROMAGE"<<endl;
 		}
+		total_size+=result[iR][0].size();
+		for(uint32_t is(0);is<result[iR].size();++is){
+			cout<<result[iR][is]<<"\n";
+
+		}
+		cout<<endl;
+		cout<<total_size<<endl;
 		//~ if(result[iR].size()==0){
 			//~ cout<<"EMPTY IM SAD"<<endl;cin.get();
 		//~ }
