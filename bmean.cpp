@@ -428,6 +428,8 @@ vector<vector<string>> split_reads(const vector<kmer>& anchors, const vector<dou
 			//~ if(abs((int)chunk.size()-relative_positions[iA])<relative_positions[iA]*0.5){
 				result[0].push_back(chunk);
 			//~ }
+		}else{
+			result[0].push_back("");
 		}
 		anchor_position=(get_position(kmer_index,anchors[anchors.size()-1],iR));
 		if(anchor_position!=-1){
@@ -435,6 +437,8 @@ vector<vector<string>> split_reads(const vector<kmer>& anchors, const vector<dou
 			//~ if(abs((int)chunk.size()-relative_positions[iA])<relative_positions[iA]*0.5){
 				result[anchors.size()].push_back(chunk);
 			//~ }
+		}else{
+			result[anchors.size()].push_back("");
 		}
 		for(uint32_t iA(0);iA+1<anchors.size();++iA){
 			int32_t anchor_position1(get_position(kmer_index,anchors[iA],iR));
@@ -473,6 +477,8 @@ vector<vector<string>> split_reads(const vector<kmer>& anchors, const vector<dou
 							//~ cout<<"ALIEN23"<<endl;
 						}
 					}
+				}else{
+					result[iA+1].push_back("");
 				}
 			}
 		}
@@ -485,6 +491,9 @@ vector<vector<string>> split_reads(const vector<kmer>& anchors, const vector<dou
 vector<string> easy_consensus(const vector<string>& V){
 	if(V.size()<2){return V;}
 	for(uint32_t iV(1);iV<V.size();++iV){
+		if(V[iV].size()==0){
+			continue;
+		}
 		if(V[iV].size()!=V[0].size()){
 			return V;
 		}
