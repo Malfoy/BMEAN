@@ -10,6 +10,10 @@
 #include <math.h>
 #include "utils.h"
 
+//~ #include "BOA/lpo.h"
+//~ #include "BOA/lmsa_format.h"
+//~ #include "BOA/lalign_score.h"
+
 
 
 
@@ -211,7 +215,7 @@ vector<kmer> longest_ordered_chain( kmer2localisation& kmer_index,const vector<k
 bool comparable(double x, pair<double,double> deciles){
 	//~ return true;
 	if(x<deciles.second+5){
-		//RIGHT IS OK
+		//LOW VALUE
 		if(x>deciles.first-5){
 			return true;
 		}
@@ -220,13 +224,7 @@ bool comparable(double x, pair<double,double> deciles){
 		}
 		return true;
 	}else{
-		//RIGHT IS NOT OK
-		//~ if(x/deciles.second>2){
-			//~ return false;
-		//~ }
-		//~ if(x>deciles.first-5){
-			//~ return true;
-		//~ }
+		//High value
 		if(x/deciles.second>2){
 			return false;
 		}
@@ -276,7 +274,7 @@ bool comparable(double x,double mean){
 
 pair<double,double> deciles( vector<uint32_t>& V){
 	sort(V.begin(),V.end());
-	return {V[floor(V.size()*0.2)],V[ceil(V.size()*0.8)]};
+	return {V[floor((V.size()-1)*0.2)],V[ceil((V.size()-1)*0.8)]};
 }
 
 
@@ -315,9 +313,16 @@ vector<double> average_distance_next_anchor(kmer2localisation& kmer_index,  vect
 				count++;
 			}
 		}
-		//~ if(count==0){
-		//~ }
-		result.push_back(sum/count);
+		if(count==0){
+			cout<<"SHOULD NOT HAPPEN"<<endl;
+			for(uint32_t iD(0);iD<v_dis.size();++iD){
+				sum+=v_dis[iD];
+				count++;
+			}
+		}else{
+			result.push_back(sum/count);
+		}
+
 		//~ if(count!=0){
 			//~ v_sum.push_back(sum);
 			//~ v_count.push_back(count);
@@ -535,7 +540,7 @@ vector<string> easy_consensus(const vector<string>& V){
 
 
 
-vector<vector<string>> global_consensus(const vector<vector<string>>& V){
+vector<vector<string>> global_consensus(const vector<vector<string>>& V, uint32_t n  ){
 	vector<vector<string>> result;
 	string stacked_consensus;
 	for(uint32_t iV(0);iV<V.size();++iV){
@@ -546,18 +551,60 @@ vector<vector<string>> global_consensus(const vector<vector<string>>& V){
 			stacked_consensus+=consensus[0];
 		}else{
 			if(stacked_consensus.size()!=0){
-				result.push_back({stacked_consensus});
+				vector<string> vect(n, stacked_consensus);
+				result.push_back(vect);
 				stacked_consensus="";
 			}
 			result.push_back(consensus);
 		}
 	}
 	if(stacked_consensus.size()!=0){
-		result.push_back({stacked_consensus});
+		vector<string> vect(n, stacked_consensus);
+		result.push_back(vect);
 		stacked_consensus="";
 	}
 	return result;
 }
+
+
+
+//~ string consensus_POA(vector<string> W){
+	 //~ int i,j,ibundle=ALL_BUNDLES,nframe_seq=0,use_reverse_complement=0;
+	  //~ int nseq=0,do_switch_case=dont_switch_case,do_analyze_bundles=0;
+	  //~ int is_silent = 0;
+	  //~ int nseq_in_list=0,n_input_seqs=0,max_input_seqs=0;
+	  //~ char score_file[256],seq_file[256],po_list_entry_filename[256],*comment=NULL,*al_name="test align";
+	  //~ ResidueScoreMatrix_T score_matrix; /* DEFAULT GAP PENALTIES*/
+	  //~ LPOSequence_T *seq=NULL,*lpo_out=NULL,*frame_seq=NULL,*dna_lpo=NULL,*lpo_in=NULL;
+	  //~ LPOSequence_T **input_seqs=NULL;
+	  //~ FILE *errfile=stderr,*logfile=NULL,*lpo_file_out=NULL,*po_list_file=NULL,*seq_ifile=NULL;
+	  //~ char *print_matrix_letters=NULL,*fasta_out=NULL,*po_out=NULL,*matrix_filename=NULL,
+		//~ *seq_filename=NULL,*frame_dna_filename=NULL,*po_filename=NULL,*po2_filename=NULL,
+		//~ *po_list_filename=NULL, *hbmin=NULL,*numeric_data=NULL,*numeric_data_name="Nmiscall",
+		//~ *dna_to_aa=NULL,*pair_score_file=NULL,*aafreq_file=NULL,*termval_file=NULL,
+		//~ *bold_seq_name=NULL,*subset_file=NULL,*subset2_file=NULL,*rm_subset_file=NULL,
+		//~ *rm_subset2_file=NULL;
+	  //~ float bundling_threshold=0.9;
+	  //~ int exit_code=0,count_sequence_errors=0,please_print_snps=0,
+		//~ report_consensus_seqs=0,report_major_allele=0,use_aggressive_fusion=0;
+	  //~ int show_allele_evidence=0,please_collapse_lines=0,keep_all_links=0;
+	  //~ int remove_listed_seqs=0,remove_listed_seqs2=0,please_report_similarity;
+	  //~ int do_global=0, do_progressive=0, do_preserve_sequence_order=0;
+	  //~ char *reference_seq_name="CONSENS%d",*clustal_out=NULL;
+
+	  //~ black_flag_init(argv[0],PROGRAM_VERSION);
+
+	//~ matrix_filename-"blossum80.mat";
+
+	//~ for(uint32_t iW(0);iW<W.size();++iW){
+		//~ input_seqs[n_input_seqs++] = W[iW].c_str();
+		//~ initialize_seqs_as_lpo(1,&(seq[i]),&score_matrix);//IMPORTANT
+		//~ if (n_input_seqs == max_input_seqs) {
+			//~ max_input_seqs *= 2;
+			//~ REALLOC (input_seqs, max_input_seqs, LPOSequence_T *);
+		//~ }
+	//~ }
+//~ }
 
 
 
@@ -584,7 +631,7 @@ vector<vector<string>> MSABMAAC(const vector<string>& Reads,uint32_t k, double p
 	cout<<"PHASE 5 done"<<endl;
 
 
-	result=global_consensus(result);
+	result=global_consensus(result,Reads.size());
 
 	return result;
 }
