@@ -9,10 +9,19 @@
 #include <algorithm>
 #include <math.h>
 #include "utils.h"
+#include "bmean.h"
+#include "SSW/src/ssw_cpp.h"
+#include "global.h"
 
-//~ #include "BOA/lpo.h"
-//~ #include "BOA/lmsa_format.h"
-//~ #include "BOA/lalign_score.h"
+extern "C"{
+#include "lpo.h"
+#include "msa_format.h"
+#include "align_score.h"
+#include "default.h"
+#include "poa.h"
+#include "seq_util.h"
+}
+
 
 
 
@@ -493,28 +502,177 @@ vector<vector<string>> split_reads(const vector<kmer>& anchors, const vector<dou
 
 
 
-vector<string> easy_consensus(const vector<string>& V){
-	if(V.size()<2){return V;}
-	for(uint32_t iV(1);iV<V.size();++iV){
+int read_string(vector<string>& Vstr,Sequence_T **seq,int do_switch_case,char **comment)
+{
+	//~ cout<<"------------READ---------------"<<endl;
+  int c,nseq=0,length=0;
+  char seq_name[FASTA_NAME_MAX]="",
+  line[SEQ_LENGTH_MAX],seq_title[FASTA_NAME_MAX]="";
+  char *p;
+  stringptr tmp_seq=STRINGPTR_EMPTY_INIT;
+
+  for(uint32_t i(0);i<Vstr.size();++i){
+
+	  if(Vstr[i].empty()){continue;}
+	   //~ cout<<Vstr[i]<<endl;
+	char *cstr = new char[Vstr[i].length() + 1];
+	strcpy(cstr, Vstr[i].c_str());
+	length=Vstr[i].size();
+	tmp_seq.p=cstr;
+
+	//TODO DELETE
+	if (create_seq(nseq,seq,seq_name,seq_title,tmp_seq.p,do_switch_case))
+	  nseq++;
+  }
+  stringptr_free(&tmp_seq);
+  //~ cout<<nseq<<endl;
+  return nseq; /* TOTAL NUMBER OF SEQUENCES CREATED */
+}
+
+
+
+vector<string> write_string(LPOSequence_T *seq,int nsymbol,char symbol[],int ibundle){
+  int i(0);
+  vector<string> result;
+  int j,nring=0,iprint;
+  char **seq_pos=NULL,*p=NULL,*include_in_save=NULL;
+
+  nring=xlate_lpo_to_al(seq,nsymbol,symbol,ibundle, '-',&seq_pos,&p,&include_in_save);
+  //~ cout<<"LPO2al"<<endl;
+  LOOPF (i,seq->nsource_seq) { /* NOW WRITE OUT FASTA FORMAT */
+    //~ if (ibundle<0 || seq->source_seq[i].bundle_id == ibundle) { /* OR JUST THIS BUNDLE*/
+      //~ fprintf(ifile,">%s",seq->source_seq[i].name);
+      //~ iprint=0;
+      //~ LOOPF (j,nring) { /* WRITE OUT 60 CHARACTER SEQUENCE LINES */
+	//~ if (NULL==include_in_save || include_in_save[j]) {
+	  //~ fprintf(ifile,"%s%c",iprint%60? "":"\n", seq_pos[i][j]);
+	  //~ iprint++; /* KEEP COUNT OF PRINTED CHARACTERS */
+	//~ }
+		string nadine(seq_pos[i],nring);
+		result.push_back(nadine);
+		//~ for(uint32_t iN(0);iN<nadine.size();++iN){
+			//~ if(nadine[iN]!='-'){
+				//~ result.push_back(nadine[iN]);
+			//~ }
+		//~ }
+		//~ break;
+      //~ }
+      //~ fputc('\n',ifile);
+    }
+
+  FREE(p); /* DUMP TEMPORARY MEMORY */
+  FREE(include_in_save);
+  FREE(seq_pos);
+  return result;
+}
+
+
+
+
+
+
+vector<string> consensus_POA( vector<string>& W){
+	 int i,j,ibundle=0,nframe_seq=0,use_reverse_complement=0;
+	  int nseq=0,do_switch_case=dont_switch_case,do_analyze_bundles=0;
+	  int is_silent = 0;
+	  int nseq_in_list=0,n_input_seqs=0,max_input_seqs=10;
+	  char score_file[256],seq_file[256],po_list_entry_filename[256],*comment=NULL,*al_name="test align";
+	  //~ ResidueScoreMatrix_T score_matrix; /* DEFAULT GAP PENALTIES*/
+	  LPOSequence_T *seq=NULL,*lpo_out=NULL,*frame_seq=NULL,*dna_lpo=NULL,*lpo_in=NULL;
+	  LPOSequence_T **input_seqs=NULL;
+	  FILE *errfile=stderr,*logfile=NULL,*lpo_file_out=NULL,*po_list_file=NULL,*seq_ifile=NULL;
+	  char *print_matrix_letters=NULL,*fasta_out=NULL,*po_out=NULL,*matrix_filename=NULL,
+		*seq_filename=NULL,*frame_dna_filename=NULL,*po_filename=NULL,*po2_filename=NULL,
+		*po_list_filename=NULL, *hbmin=NULL,*numeric_data=NULL,*numeric_data_name="Nmiscall",
+		*dna_to_aa=NULL,*pair_score_file=NULL,*aafreq_file=NULL,*termval_file=NULL,
+		*bold_seq_name=NULL,*subset_file=NULL,*subset2_file=NULL,*rm_subset_file=NULL,
+		*rm_subset2_file=NULL;
+	  float bundling_threshold=0.90;
+	  int exit_code=0,count_sequence_errors=0,please_print_snps=0,
+		report_consensus_seqs=0,report_major_allele=0,use_aggressive_fusion=0;
+	  int show_allele_evidence=0,please_collapse_lines=0,keep_all_links=0;
+	  int remove_listed_seqs=0,remove_listed_seqs2=0,please_report_similarity;
+	  int do_global=0, do_progressive=0, do_preserve_sequence_order=0;
+	  char *reference_seq_name="CONSENS%d",*clustal_out=NULL;
+
+  //~ black_flag_init(argv[0],PROGRAM_VERSION);
+
+	matrix_filename="blosum80.mat";
+	if(score_matrix_init==false){
+		if (read_score_matrix(matrix_filename,&score_matrix)<=0){/* READ MATRIX */
+		WARN_MSG(USERR,(ERRTXT,"Error reading matrix file %s.\nExiting", matrix_filename ? matrix_filename: "because none specified"),"$Revision: 1.2.2.9 $");
+		}
+		score_matrix_init=true;
+	}
+
+	//~ cout<<"GO INSERTION §"<<endl;
+
+	nseq = read_string (W, &seq, do_switch_case, &comment);
+	//~ cout<<"GO INIT AS LPO"<<endl;
+	CALLOC (input_seqs, max_input_seqs, LPOSequence_T *);
+	for (i=0; i<nseq; i++) {
+		//~ cout<<"i"<<i<<endl;
+		input_seqs[n_input_seqs++] = &(seq[i]);
+		//~ cout<<"inputseqnadine"<<endl;
+		initialize_seqs_as_lpo(1,&(seq[i]),&score_matrix);//IMPORTANT
+		//~ cout<<"init sucdeees"<<endl;
+		if (n_input_seqs == max_input_seqs) {
+			max_input_seqs *= 2;
+			REALLOC (input_seqs, max_input_seqs, LPOSequence_T *);
+		}
+	}
+	//~ cout<<"GO CONSENSUS"<<endl;
+	lpo_out = buildup_progressive_lpo (n_input_seqs, input_seqs, &score_matrix,use_aggressive_fusion, do_progressive, pair_score_file,matrix_scoring_function, do_global, do_preserve_sequence_order);
+	//~ generate_lpo_bundles(lpo_out,bundling_threshold);
+	//~ cout<<"GO OUTPUT"<<endl;
+	vector<string> result(write_string(lpo_out,score_matrix.nsymbol,score_matrix.symbol,ibundle));
+	//~ cout<<result<<endl;
+	//~ cout<<"CONSENSUS"<<endl;
+	return result;
+}
+
+
+vector<string> easy_consensus(vector<string> V){
+	//~ cout<<"EASYCONSENSU GO"<<endl;
+
+	//~ cout<<"CONSENSU POA DONE "<<endl;
+	//~ if(V.size()<2){return V;}
+	//~ return {consensus_POA(V)};
+	for(uint32_t iV(0);iV<V.size();++iV){
 		if(V[iV].size()==0){
 			continue;
 		}
 		if(V[iV].size()!=V[0].size()){
-			return V;
+			V=consensus_POA(V);
+			break;
 		}
 	}
 	string result;
+	//~ for(uint i(0);i<V.size();++i){
+		//~ cout<<V[i]<<endl;
+	//~ }
+	//~ cout<<"END PP"<<endl;
 	for(uint32_t iS(0);iS<V[0].size();++iS){
-		uint32_t cA,cC,cG,cT;
-		cA=cC=cG=cT=0;
+		uint32_t cA,cC,cG,cT,cM;
+		cM=cA=cC=cG=cT=0;
 		for(uint32_t iV(0);iV<V.size();++iV){
+			if(V[iV].size()==0){
+			continue;
+		}
 			switch(V[iV][iS]){
 				case 'A': ++cA;break;
 				case 'C': ++cC;break;
 				case 'G': ++cG;break;
 				case 'T': ++cT;break;
-				default: cout<<"NOPE"<<endl;
+				default:
+				cM++;
+				//~ cout<<"NOPE"<<V[iV][iS]<<"?"<<endl;
+				//~ cout<<iS<<" "<<V[iV].size()<<" "<<iV<<" "<<V.size()<<endl;
 			}
+		}
+		if(cM>cA and cM>cC and cM>cT and cM>cG){
+			result+=('-');
+			continue;
 		}
 		if(cA>cC and cA>cG and cA>cT){
 			result+=('A');
@@ -531,35 +689,43 @@ vector<string> easy_consensus(const vector<string>& V){
 		if(cT>cA and cT>cG and cT>cC){
 			result+=('T');
 			continue;
-			}
+		}
+		result+=('N');
+			//~ continue;
+		//~ cout<<"TIE"<<endl;
 		return V;
 	}
+	//~ cout<<"EASYCONSENSU end"<<endl;
+
 	return {result};
 }
 
 
 
-
-vector<vector<string>> global_consensus(const vector<vector<string>>& V, uint32_t n  ){
+vector<vector<string>> global_consensus(const  vector<vector<string>>& V, uint32_t n  ){
 	vector<vector<string>> result;
 	string stacked_consensus;
 	for(uint32_t iV(0);iV<V.size();++iV){
 		if(V[iV].size()==0){
+			continue;
 		}
 		vector<string> consensus(easy_consensus(V[iV]));
-		if(consensus.size()==1){
+		//~ cout<<"EASYCONSENSUS"<<endl;
+		//~ cout<<consensus[0]<<endl;
+		//~ if(consensus.size()==1){
 			stacked_consensus+=consensus[0];
-		}else{
-			if(stacked_consensus.size()!=0){
-				vector<string> vect(n, stacked_consensus);
-				result.push_back(vect);
-				stacked_consensus="";
-			}
-			result.push_back(consensus);
-		}
+		//~ }else{
+			//~ if(stacked_consensus.size()!=0){
+				//~ vector<string> vect(n, stacked_consensus);
+				//~ result.push_back(vect);
+				//~ stacked_consensus="";
+			//~ }
+			//~ result.push_back(consensus);
+		//~ }
 	}
 	if(stacked_consensus.size()!=0){
-		vector<string> vect(n, stacked_consensus);
+		stacked_consensus.erase (remove(stacked_consensus.begin(), stacked_consensus.end(), '-'), stacked_consensus.end());
+		vector<string> vect(1, stacked_consensus);
 		result.push_back(vect);
 		stacked_consensus="";
 	}
@@ -568,70 +734,55 @@ vector<vector<string>> global_consensus(const vector<vector<string>>& V, uint32_
 
 
 
-//~ string consensus_POA(vector<string> W){
-	 //~ int i,j,ibundle=ALL_BUNDLES,nframe_seq=0,use_reverse_complement=0;
-	  //~ int nseq=0,do_switch_case=dont_switch_case,do_analyze_bundles=0;
-	  //~ int is_silent = 0;
-	  //~ int nseq_in_list=0,n_input_seqs=0,max_input_seqs=0;
-	  //~ char score_file[256],seq_file[256],po_list_entry_filename[256],*comment=NULL,*al_name="test align";
-	  //~ ResidueScoreMatrix_T score_matrix; /* DEFAULT GAP PENALTIES*/
-	  //~ LPOSequence_T *seq=NULL,*lpo_out=NULL,*frame_seq=NULL,*dna_lpo=NULL,*lpo_in=NULL;
-	  //~ LPOSequence_T **input_seqs=NULL;
-	  //~ FILE *errfile=stderr,*logfile=NULL,*lpo_file_out=NULL,*po_list_file=NULL,*seq_ifile=NULL;
-	  //~ char *print_matrix_letters=NULL,*fasta_out=NULL,*po_out=NULL,*matrix_filename=NULL,
-		//~ *seq_filename=NULL,*frame_dna_filename=NULL,*po_filename=NULL,*po2_filename=NULL,
-		//~ *po_list_filename=NULL, *hbmin=NULL,*numeric_data=NULL,*numeric_data_name="Nmiscall",
-		//~ *dna_to_aa=NULL,*pair_score_file=NULL,*aafreq_file=NULL,*termval_file=NULL,
-		//~ *bold_seq_name=NULL,*subset_file=NULL,*subset2_file=NULL,*rm_subset_file=NULL,
-		//~ *rm_subset2_file=NULL;
-	  //~ float bundling_threshold=0.9;
-	  //~ int exit_code=0,count_sequence_errors=0,please_print_snps=0,
-		//~ report_consensus_seqs=0,report_major_allele=0,use_aggressive_fusion=0;
-	  //~ int show_allele_evidence=0,please_collapse_lines=0,keep_all_links=0;
-	  //~ int remove_listed_seqs=0,remove_listed_seqs2=0,please_report_similarity;
-	  //~ int do_global=0, do_progressive=0, do_preserve_sequence_order=0;
-	  //~ char *reference_seq_name="CONSENS%d",*clustal_out=NULL;
-
-	  //~ black_flag_init(argv[0],PROGRAM_VERSION);
-
-	//~ matrix_filename-"blossum80.mat";
-
-	//~ for(uint32_t iW(0);iW<W.size();++iW){
-		//~ input_seqs[n_input_seqs++] = W[iW].c_str();
-		//~ initialize_seqs_as_lpo(1,&(seq[i]),&score_matrix);//IMPORTANT
-		//~ if (n_input_seqs == max_input_seqs) {
-			//~ max_input_seqs *= 2;
-			//~ REALLOC (input_seqs, max_input_seqs, LPOSequence_T *);
-		//~ }
-	//~ }
-//~ }
-
-
 
 vector<vector<string>> MSABMAAC(const vector<string>& Reads,uint32_t k, double percent_shared){
 	int kmer_size(k);
+	//~ vector<string> VTest;;
+	//~ VTest.push_back("CTGACTGACCCCGTACGTCA");
+	//~ VTest.push_back("CTGACTGATTTCGTACGTCA");
+	//~ VTest.push_back("CTGACTGAAAACGTACGTCA");
+	//~ VTest.push_back("CTGACTGAAAACGTACGTCA");
+	//~ VTest.push_back("CTGACTGAAAACGTACGTCAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+	//~ VTest.push_back("CTGACTGATTTCGTACGTCA");
+	//~ VTest.push_back("CTGACTGATTTCGTACGTCA");
+	//~ VTest.push_back("CTGACTGATTTCGTACGTCA");
+	//~ VTest.push_back("CTGACTGATTTCGTACGTCA");
+	//~ VTest.push_back("CTGACTGATTTCGTACGTCA");
+	//~ VTest.push_back("CTGACTGATTTCGTACGTCA");
+	//~ VTest.push_back("CTGACTGCCCCCGTACGTCA");
+	//~ VTest.push_back("CTGACTGATTTCGTACGTCA");
+	//~ VTest.push_back("CTGACTGATTTCGTACGTCA");
+	//~ VTest.push_back("CTGACTGACCCCGTACGTCA");
+	//~ auto nadine({VTest});
+	//~ auto GC(global_consensus(nadine,1));
+	//~ cout<<GC[0][0]<<endl;
+	//~ exit(0);
+
 
 
 	kmer2localisation kmer_index;
 	fill_index_kmers(Reads,kmer_index,kmer_size);
-	cout<<"PHASE 1 done"<<endl;
+	//~ cout<<"PHASE 1 done"<<endl;
 
 	auto kmer_count(filter_index_kmers(kmer_index,percent_shared*(double)Reads.size()));
-	cout<<"PHASE 2.1 done"<<endl;
+	//~ auto kmer_count(filter_index_kmers(kmer_index,percent_shared));
+	//~ cout<<"PHASE 2.1 done"<<endl;
 	auto template_read(get_template(kmer_index,Reads[0],kmer_size));
-	cout<<"PHASE 2 done"<<endl;
+	//~ cout<<"PHASE 2 done"<<endl;
 
 	vector<kmer> anchors(longest_ordered_chain(kmer_index, template_read));
-	cout<<"PHASE 3 done"<<endl;
+	//~ cout<<"PHASE 3 done"<<endl;
 
 	vector<double> relative_positions=(average_distance_next_anchor(kmer_index,anchors,kmer_count,false));
-	cout<<"PHASE 4 done"<<endl;
+	//~ cout<<"PHASE 4 done"<<endl;
 
 	vector<vector<string>> result(split_reads(anchors,relative_positions,Reads,kmer_index,kmer_size));
-	cout<<"PHASE 5 done"<<endl;
+	//~ cout<<"PHASE 5 done"<<endl;
 
+	cout<<"windows number: "<<result.size()<<endl;
 
 	result=global_consensus(result,Reads.size());
+	//~ cout<<"PHASE 6 done"<<endl;
 
 	return result;
 }

@@ -1,6 +1,5 @@
-#ifndef BMEAN
-#define BMEAN
-
+#ifndef GLOBAL
+#define GLOBAL
 
 
 #include <vector>
@@ -16,18 +15,8 @@ extern "C"{
 #include "poa.h"
 #include "seq_util.h"
 }
-
-
-
-
-using namespace std;
-
-
-
-
-
-vector<vector<string>> MSABMAAC(const vector<string>& nadine,uint32_t la,double cuisine);
-
+ResidueScoreMatrix_T score_matrix;
+bool score_matrix_init=false;
 
 
 #endif
