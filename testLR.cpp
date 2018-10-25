@@ -26,7 +26,7 @@
 #include "bmean.h"
 #include "utils.h"
 #include <time.h>
-#include "SSW/src/ssw_cpp.h"
+#include "Complete-Striped-Smith-Waterman-Library/src/ssw_cpp.h"
 
 
 

@@ -10,7 +10,7 @@
 #include <math.h>
 #include "utils.h"
 #include "bmean.h"
-#include "SSW/src/ssw_cpp.h"
+#include "Complete-Striped-Smith-Waterman-Library/src/ssw_cpp.h"
 #include "global.h"
 
 extern "C"{
