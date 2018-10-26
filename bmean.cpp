@@ -118,7 +118,7 @@ bool order_according2read_id (localisation i,localisation j) { return (i.read_id
 
 
 int anchors_ordered_according2reads(const kmer kmer1,const kmer kmer2,  kmer2localisation& kmer_index){
-	uint32_t result(0);
+	int32_t result(0);
 	auto v_loc1(kmer_index[kmer1]);
 	auto v_loc2(kmer_index[kmer2]);
 	//~ sort (v_loc1.begin(), v_loc1.end(), order_according2read_id);
@@ -155,8 +155,7 @@ score_chain longest_ordered_chain_from_anchors( kmer2localisation& kmer_index, u
 	for(uint i(start+1);i<template_read.size();++i){
 		kmer next(template_read[i]);
 		int score(anchors_ordered_according2reads(template_read[start],next,kmer_index));
-		if(score>0){
-
+		if(score>10){
 			auto p=longest_ordered_chain_from_anchors(kmer_index,best_chain_computed,i,template_read);
 			if(p.length>max_chain){
 				max_chain=p.length;
@@ -433,6 +432,7 @@ vector<vector<string>> split_reads(const vector<kmer>& anchors, const vector<dou
 		return result;
 	}
 	for(uint32_t iR(0);iR<Reads.size();++iR){
+		//~ cout<<endl;
 		string read=Reads[iR];
 		vector<string> split(anchors.size()+1);
 		//FIRST AND LAST REGION
@@ -443,7 +443,7 @@ vector<vector<string>> split_reads(const vector<kmer>& anchors, const vector<dou
 				result[0].push_back(chunk);
 			//~ }
 		}else{
-			result[0].push_back("");
+			//~ result[0].push_back("");
 		}
 		anchor_position=(get_position(kmer_index,anchors[anchors.size()-1],iR));
 		if(anchor_position!=-1){
@@ -452,7 +452,7 @@ vector<vector<string>> split_reads(const vector<kmer>& anchors, const vector<dou
 				result[anchors.size()].push_back(chunk);
 			//~ }
 		}else{
-			result[anchors.size()].push_back("");
+			//~ result[anchors.size()].push_back("");
 		}
 		for(uint32_t iA(0);iA+1<anchors.size();++iA){
 			int32_t anchor_position1(get_position(kmer_index,anchors[iA],iR));
@@ -464,12 +464,14 @@ vector<vector<string>> split_reads(const vector<kmer>& anchors, const vector<dou
 					//~ if(abs((int)chunk.size()-relative_positions[iA])<relative_positions[iA]*0.5){
 					if(comparable(chunk.size(), relative_positions[iA])){
 						result[iA+1].push_back(chunk);
+						//~ cout<<chunk<<".";
 					}else{
 						//~ cout<<"ALIEN"<<endl;
 						//~ cout<<chunk.size()<<" "<<relative_positions[iA]<<endl;
 					}
 				}else{
-					//~ continue;
+					//~ cout<<'-';
+					continue;
 					//GOT THE LEFT ANCHOR
 					string chunk(read.substr(anchor_position1,relative_positions[iA]));
 					if(abs((int)chunk.size()-relative_positions[iA])<relative_positions[iA]*0.5){
@@ -480,7 +482,8 @@ vector<vector<string>> split_reads(const vector<kmer>& anchors, const vector<dou
 				}
 			}else{
 				if(anchor_position2!=-1){
-					//~ continue;
+					//~ cout<<'-';
+					continue;
 					//GOT THE RIGHT ANCHOR
 					if(anchor_position2>relative_positions[iA]){
 						string chunk(read.substr(anchor_position2-relative_positions[iA],relative_positions[iA]));
@@ -492,7 +495,8 @@ vector<vector<string>> split_reads(const vector<kmer>& anchors, const vector<dou
 						}
 					}
 				}else{
-					result[iA+1].push_back("");
+					//~ cout<<'-';
+					//~ result[iA+1].push_back("");
 				}
 			}
 		}
@@ -575,7 +579,7 @@ vector<string> consensus_POA( vector<string>& W){
 	 int i,j,ibundle=0,nframe_seq=0,use_reverse_complement=0;
 	  int nseq=0,do_switch_case=dont_switch_case,do_analyze_bundles=0;
 	  int is_silent = 0;
-	  int nseq_in_list=0,n_input_seqs=0,max_input_seqs=10;
+	  int nseq_in_list=0,n_input_seqs=0,max_input_seqs=100;
 	  char score_file[256],seq_file[256],po_list_entry_filename[256],*comment=NULL,*al_name="test align";
 	  //~ ResidueScoreMatrix_T score_matrix; /* DEFAULT GAP PENALTIES*/
 	  LPOSequence_T *seq=NULL,*lpo_out=NULL,*frame_seq=NULL,*dna_lpo=NULL,*lpo_in=NULL;
@@ -633,20 +637,22 @@ vector<string> consensus_POA( vector<string>& W){
 
 
 vector<string> easy_consensus(vector<string> V){
-	//~ cout<<"EASYCONSENSU GO"<<endl;
-
-	//~ cout<<"CONSENSU POA DONE "<<endl;
-	//~ if(V.size()<2){return V;}
-	//~ return {consensus_POA(V)};
+	uint32_t non_empty(0);
+	//~ uint32_t maximum(0);
 	for(uint32_t iV(0);iV<V.size();++iV){
-		if(V[iV].size()==0){
-			continue;
-		}
+		//~ cout<<V[iV]<<endl;
+		//~ maximum=max(maximum,(uint32_t)V[iV].size());
+		//~ if(V[iV].size()!=0){
+			//~ non_empty++;
+			//~ continue;
+		//~ }
 		if(V[iV].size()!=V[0].size()){
 			V=consensus_POA(V);
 			break;
 		}
 	}
+	//~ cout<<non_empty<<"ne";
+	//~ cin.get();
 	string result;
 	//~ for(uint i(0);i<V.size();++i){
 		//~ cout<<V[i]<<endl;
@@ -657,8 +663,8 @@ vector<string> easy_consensus(vector<string> V){
 		cM=cA=cC=cG=cT=0;
 		for(uint32_t iV(0);iV<V.size();++iV){
 			if(V[iV].size()==0){
-			continue;
-		}
+				continue;
+			}
 			switch(V[iV][iS]){
 				case 'A': ++cA;break;
 				case 'C': ++cC;break;
@@ -707,6 +713,7 @@ vector<vector<string>> global_consensus(const  vector<vector<string>>& V, uint32
 	string stacked_consensus;
 	for(uint32_t iV(0);iV<V.size();++iV){
 		if(V[iV].size()==0){
+			cout<<"MISSING WINDOWS"<<endl;
 			continue;
 		}
 		vector<string> consensus(easy_consensus(V[iV]));
@@ -779,7 +786,14 @@ vector<vector<string>> MSABMAAC(const vector<string>& Reads,uint32_t k, double p
 	vector<vector<string>> result(split_reads(anchors,relative_positions,Reads,kmer_index,kmer_size));
 	//~ cout<<"PHASE 5 done"<<endl;
 
-	cout<<"windows number: "<<result.size()<<endl;
+	cout<<""<<result.size()<<"	";
+	//~ for(uint i(0);i<result.size();++i){
+		//~ for(uint j(0);j<result[i].size();++j){
+			//~ cout<<result[i][j]<<" ";
+		//~ }
+		//~ cout<<endl;
+	//~ }
+	//~ cin.get();
 
 	result=global_consensus(result,Reads.size());
 	//~ cout<<"PHASE 6 done"<<endl;

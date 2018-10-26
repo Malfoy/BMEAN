@@ -39,7 +39,7 @@ using namespace chrono;
 
 void expe(duration<double>& elapsed_seconds,uint& miss ){
 	vector<string> input;
-	string str(rand_seq(1000));
+	string str(rand_seq(500));
 	for(uint i(0);i<100;++i){
 		string str_mut(str);
 		mutate(str_mut,str_mut.size()*10/100);
@@ -50,7 +50,7 @@ void expe(duration<double>& elapsed_seconds,uint& miss ){
 	auto  end = std::chrono::system_clock::now();
 	elapsed_seconds+= (end - start);
 
-    std::cout  << "elapsed time: " << elapsed_seconds.count() << "s\n";
+    //~ std::cout  << "elapsed time: " << elapsed_seconds.count() << "s\n";
 	//~ cout<<"==========================================================="<<endl;
 	//~ cout<<"================THE END===================================="<<endl;
 	//~ cout<<"==========================================================="<<endl;
@@ -87,7 +87,7 @@ void expe(duration<double>& elapsed_seconds,uint& miss ){
 			//~ cout<<str<<'\n'<<endl;
 			aligner.Align(result[iR][is].c_str(), str.c_str(), str.size(), filter, &alignment, maskLen);
 			miss+=alignment.mismatches;
-			cout<<"MISSMATCHES "<<alignment.mismatches<<" "<<alignment.ref_begin<<" "<<alignment.ref_end <<"6gare "<<alignment.cigar_string<<" "<<total_size << endl<<endl;;
+			//~ cout<<"MISSMATCHES "<<alignment.mismatches<<" "<<alignment.ref_begin<<" "<<alignment.ref_end <<"6gare "<<alignment.cigar_string<<" "<<total_size << endl<<endl;;
 			break;
 		}
 		//~ cout<<endl;
@@ -106,11 +106,11 @@ int main(int argc, char ** argv){
 	uint miss(0);
 	while(true){
 		expe(elapsed_seconds,miss);
-		if(++n>10){
+		if(++n>100){
 			break;
 		}
 	}
-	cout  << "mean elapsed time: " << elapsed_seconds.count()/n << "s\n";
+	cout  << "\nMean elapsed time: " << elapsed_seconds.count()<< "s\n";
 	cout<< "Mean missmacthes: "<<(double)miss/n<<endl;
 	return 0;
 }
