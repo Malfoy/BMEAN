@@ -37,16 +37,16 @@ using namespace chrono;
 
 
 
-void expe(duration<double>& elapsed_seconds,uint& miss ){
+void expe(duration<double>& elapsed_seconds,uint& miss,uint size ){
 	vector<string> input;
-	string str(rand_seq(500));
-	for(uint i(0);i<100;++i){
+	string str(rand_seq(size));
+	for(uint i(0);i<25;++i){
 		string str_mut(str);
 		mutate(str_mut,str_mut.size()*10/100);
 		input.push_back(str_mut);
 	}
 	auto start = std::chrono::system_clock::now();
-	auto result(MSABMAAC(input,8,0.5));
+	auto result(MSABMAAC(input,8,10));
 	auto  end = std::chrono::system_clock::now();
 	elapsed_seconds+= (end - start);
 
@@ -101,16 +101,17 @@ void expe(duration<double>& elapsed_seconds,uint& miss ){
 
 int main(int argc, char ** argv){
 	srand (time(0));
-	uint n(0);
+	uint n(0),size(500),iter(200);
 	duration<double> elapsed_seconds;
 	uint miss(0);
 	while(true){
-		expe(elapsed_seconds,miss);
-		if(++n>100){
+		expe(elapsed_seconds,miss,size);
+		if(++n>iter){
 			break;
 		}
 	}
-	cout  << "\nMean elapsed time: " << elapsed_seconds.count()<< "s\n";
-	cout<< "Mean missmacthes: "<<(double)miss/n<<endl;
+	cout<<"\ncorrected "<<iter*size/1000<<"k nucleotides"<<endl;
+	cout  << "Mean elapsed time: " << elapsed_seconds.count()<< "s\n";
+	cout<< "Mean missmacthes: "<<(double)miss*10000/n/size<<endl;
 	return 0;
 }

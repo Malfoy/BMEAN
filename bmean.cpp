@@ -24,7 +24,7 @@ extern "C"{
 
 
 
-
+//TODO REMOVE HASHTABLES
 
 using namespace std;
 
@@ -146,7 +146,7 @@ int anchors_ordered_according2reads(const kmer kmer1,const kmer kmer2,  kmer2loc
 
 
 
-score_chain longest_ordered_chain_from_anchors( kmer2localisation& kmer_index, unordered_map<uint,score_chain>& best_chain_computed, uint32_t start, const vector<kmer>& template_read){
+score_chain longest_ordered_chain_from_anchors( kmer2localisation& kmer_index, unordered_map<uint,score_chain>& best_chain_computed, uint32_t start, const vector<kmer>& template_read,double edge_solidity){
 	if(best_chain_computed.count(start)==1){
 		return best_chain_computed[start];
 	}
@@ -155,8 +155,8 @@ score_chain longest_ordered_chain_from_anchors( kmer2localisation& kmer_index, u
 	for(uint i(start+1);i<template_read.size();++i){
 		kmer next(template_read[i]);
 		int score(anchors_ordered_according2reads(template_read[start],next,kmer_index));
-		if(score>10){
-			auto p=longest_ordered_chain_from_anchors(kmer_index,best_chain_computed,i,template_read);
+		if(score>=edge_solidity){
+			auto p=longest_ordered_chain_from_anchors(kmer_index,best_chain_computed,i,template_read,edge_solidity);
 			if(p.length>max_chain){
 				max_chain=p.length;
 				max_score=p.score+score;
@@ -195,13 +195,13 @@ vector<kmer> get_template( kmer2localisation& kmer_index,const string& read,int 
 
 
 
-vector<kmer> longest_ordered_chain( kmer2localisation& kmer_index,const vector<kmer>& template_read){
+vector<kmer> longest_ordered_chain( kmer2localisation& kmer_index,const vector<kmer>& template_read, double edge_solidity){
 	unordered_map<uint,score_chain> best_chain_computed;
     vector<kmer> result;
     int32_t max_chain(0),max_score(0);
 	int32_t next_anchor(-1);
     for(int32_t i(template_read.size()-1);i>=0;--i){
-        auto p=longest_ordered_chain_from_anchors(kmer_index,best_chain_computed,i,template_read);
+        auto p=longest_ordered_chain_from_anchors(kmer_index,best_chain_computed,i,template_read,edge_solidity);
         if(p.length>max_chain){
 			max_chain=p.length;
 			max_score=p.score;
@@ -636,8 +636,43 @@ vector<string> consensus_POA( vector<string>& W){
 }
 
 
+void absoluteMAJ_consensus(vector<string>& V){
+	sort(V.begin(),V.end());
+	uint score(1),best_occ(0),best_score(0);
+	for(uint i(0);i<V.size();++i){
+		if(i+1<V.size()){
+			if(V[i]!=V[i+1]){
+				if(score> 0.5*V.size()){
+					V={V[i]};
+					return;
+				}
+				if(score>best_score){
+					best_score==score;
+					best_occ=i;
+				}
+				score=1;
+			}else{
+				score++;
+
+			}
+		}else{
+			if(score> 0.5*V.size()){
+				V={V[i]};
+				return;
+			}
+		}
+	}
+	//~ V={V[best_occ]};
+}
+
+
+
 vector<string> easy_consensus(vector<string> V){
 	uint32_t non_empty(0);
+	//~ absoluteMAJ_consensus(V);
+	if(V.size()==1){
+		return V;
+	}
 	//~ uint32_t maximum(0);
 	for(uint32_t iV(0);iV<V.size();++iV){
 		//~ cout<<V[iV]<<endl;
@@ -696,8 +731,8 @@ vector<string> easy_consensus(vector<string> V){
 			result+=('T');
 			continue;
 		}
-		result+=('N');
-			//~ continue;
+		result+=(V[0][iS]);
+		continue;
 		//~ cout<<"TIE"<<endl;
 		return V;
 	}
@@ -742,7 +777,7 @@ vector<vector<string>> global_consensus(const  vector<vector<string>>& V, uint32
 
 
 
-vector<vector<string>> MSABMAAC(const vector<string>& Reads,uint32_t k, double percent_shared){
+vector<vector<string>> MSABMAAC(const vector<string>& Reads,uint32_t k, double edge_solidity){
 	int kmer_size(k);
 	//~ vector<string> VTest;;
 	//~ VTest.push_back("CTGACTGACCCCGTACGTCA");
@@ -770,21 +805,26 @@ vector<vector<string>> MSABMAAC(const vector<string>& Reads,uint32_t k, double p
 	kmer2localisation kmer_index;
 	fill_index_kmers(Reads,kmer_index,kmer_size);
 	//~ cout<<"PHASE 1 done"<<endl;
+	//~ return {};
 
-	auto kmer_count(filter_index_kmers(kmer_index,percent_shared*(double)Reads.size()));
+	auto kmer_count(filter_index_kmers(kmer_index,edge_solidity));
 	//~ auto kmer_count(filter_index_kmers(kmer_index,percent_shared));
 	//~ cout<<"PHASE 2.1 done"<<endl;
 	auto template_read(get_template(kmer_index,Reads[0],kmer_size));
 	//~ cout<<"PHASE 2 done"<<endl;
 
-	vector<kmer> anchors(longest_ordered_chain(kmer_index, template_read));
+
+	vector<kmer> anchors(longest_ordered_chain(kmer_index, template_read,edge_solidity));
 	//~ cout<<"PHASE 3 done"<<endl;
+
 
 	vector<double> relative_positions=(average_distance_next_anchor(kmer_index,anchors,kmer_count,false));
 	//~ cout<<"PHASE 4 done"<<endl;
 
+
 	vector<vector<string>> result(split_reads(anchors,relative_positions,Reads,kmer_index,kmer_size));
 	//~ cout<<"PHASE 5 done"<<endl;
+
 
 	cout<<""<<result.size()<<"	";
 	//~ for(uint i(0);i<result.size();++i){
