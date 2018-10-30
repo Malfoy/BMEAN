@@ -40,7 +40,7 @@ using namespace chrono;
 void expe(duration<double>& elapsed_seconds,uint& miss,uint size ){
 	vector<string> input;
 	string str(rand_seq(size));
-	for(uint i(0);i<25;++i){
+	for(uint i(0);i<50;++i){
 		string str_mut(str);
 		mutate(str_mut,str_mut.size()*10/100);
 		input.push_back(str_mut);
@@ -87,7 +87,7 @@ void expe(duration<double>& elapsed_seconds,uint& miss,uint size ){
 			//~ cout<<str<<'\n'<<endl;
 			aligner.Align(result[iR][is].c_str(), str.c_str(), str.size(), filter, &alignment, maskLen);
 			miss+=alignment.mismatches;
-			//~ cout<<"MISSMATCHES "<<alignment.mismatches<<" "<<alignment.ref_begin<<" "<<alignment.ref_end <<"6gare "<<alignment.cigar_string<<" "<<total_size << endl<<endl;;
+			cout<<"MISSMATCHES "<<alignment.mismatches<<" "<<alignment.ref_begin<<" "<<alignment.ref_end <<" 6gare "<<alignment.cigar_string<<" "<<total_size << endl<<endl;;
 			break;
 		}
 		//~ cout<<endl;

@@ -289,12 +289,41 @@ pair<double,double> deciles( vector<uint32_t>& V){
 
 vector<double> average_distance_next_anchor(kmer2localisation& kmer_index,  vector<kmer>& anchors,unordered_map<kmer,uint32_t>& k_count, bool clean){
 	vector<double> result;
-
+	vector<uint32_t> v_dis;
 	vector<kmer> curated_anchors;
 	uint32_t min_distance(5);
 
+	//~ {
+		//~ v_dis.clear();
+		//~ uint32_t sum(0),count(0);
+		//~ auto v_loc1(kmer_index[anchors[i]]);
+		//~ uint32_t i1(0);
+		//~ while(i1<v_loc1.size()){
+			//~ if(v_loc1[i1].read_id==v_loc2[i2].read_id){
+				//~ v_dis.push_back(v_loc2[i1].position);
+				//~ ++i1;
+			//~ }
+		//~ }
+		//~ auto dec(deciles(v_dis));
+		//~ for(uint32_t iD(0);iD<v_dis.size();++iD){
+			//~ if(comparable(v_dis[iD],dec)){
+				//~ sum+=v_dis[iD];
+				//~ count++;
+			//~ }
+		//~ }
+		//~ if(count==0){
+			//~ cout<<"SHOULD NOT HAPPEN"<<endl;
+			//~ for(uint32_t iD(0);iD<v_dis.size();++iD){
+				//~ sum+=v_dis[iD];
+				//~ count++;
+			//~ }
+		//~ }else{
+			//~ result.push_back(sum/count);
+		//~ }
+	//~ }
+
 	for(uint i(0);i+1<anchors.size();++i){
-		vector<uint32_t> v_dis;
+		v_dis.clear();
 		uint32_t sum(0),count(0);
 		auto v_loc1(kmer_index[anchors[i]]);//THEY SHOULD BE READS SORTED
 		auto v_loc2(kmer_index[anchors[i+1]]);
@@ -342,28 +371,6 @@ vector<double> average_distance_next_anchor(kmer2localisation& kmer_index,  vect
 		//~ }
 	}
 
-	//~ if(clean){
-		//~ for(uint32_t i(0);i+1<anchors.size();++i){
-			//~ if(result[i]<min_distance){
-				//~ kmer heaviest_anchor(anchors[i]);
-				//~ uint32_t weight(k_count[anchors[i]]);
-				//~ double new_distance(0);
-				//~ while(i+1<anchors.size() and new_distance<min_distance){
-					//~ ++i;
-					//~ if(weight<=k_count[anchors[i]]){
-						//~ weight=k_count[anchors[i]];
-						//~ heaviest_anchor=(anchors[i]);
-					//~ }
-					//~ new_distance+=result[i-1];
-				//~ }
-				//~ curated_anchors.push_back(heaviest_anchor);
-
-			//~ }else{
-				//~ curated_anchors.push_back(anchors[i]);
-			//~ }
-		//~ }
-		//~ anchors=curated_anchors;
-	//~ }
 
 
 	return result;
@@ -439,18 +446,19 @@ vector<vector<string>> split_reads(const vector<kmer>& anchors, const vector<dou
 		int32_t anchor_position(get_position(kmer_index,anchors[0],iR));
 		if(anchor_position!=-1){
 			string chunk(read.substr(0,anchor_position));
-			//~ if(abs((int)chunk.size()-relative_positions[iA])<relative_positions[iA]*0.5){
+			//~ if(abs((int)chunk.size()-relative_positions[iA])<get_position(kmer_index,anchors[0],0)*0.5){
+			if(comparable(chunk.size(),get_position(kmer_index,anchors[0],0))){
 				result[0].push_back(chunk);
-			//~ }
+			}
 		}else{
 			//~ result[0].push_back("");
 		}
 		anchor_position=(get_position(kmer_index,anchors[anchors.size()-1],iR));
 		if(anchor_position!=-1){
 			string chunk(read.substr(anchor_position));
-			//~ if(abs((int)chunk.size()-relative_positions[iA])<relative_positions[iA]*0.5){
+			if(comparable(chunk.size(),Reads[0].size()-get_position(kmer_index,anchors[anchors.size()-1],0))){
 				result[anchors.size()].push_back(chunk);
-			//~ }
+			}
 		}else{
 			//~ result[anchors.size()].push_back("");
 		}
@@ -474,7 +482,7 @@ vector<vector<string>> split_reads(const vector<kmer>& anchors, const vector<dou
 					continue;
 					//GOT THE LEFT ANCHOR
 					string chunk(read.substr(anchor_position1,relative_positions[iA]));
-					if(abs((int)chunk.size()-relative_positions[iA])<relative_positions[iA]*0.5){
+					if(comparable(chunk.size(),get_position(kmer_index,anchors[0],0))){
 						result[iA+1].push_back(chunk);
 					}else{
 						//~ cout<<"ALIEN32"<<endl;
@@ -487,7 +495,7 @@ vector<vector<string>> split_reads(const vector<kmer>& anchors, const vector<dou
 					//GOT THE RIGHT ANCHOR
 					if(anchor_position2>relative_positions[iA]){
 						string chunk(read.substr(anchor_position2-relative_positions[iA],relative_positions[iA]));
-						if(abs((int)chunk.size()-relative_positions[iA])<relative_positions[iA]*0.5){
+						if(comparable(chunk.size(),get_position(kmer_index,anchors[0],0))){
 							result[iA+1].push_back(chunk);
 
 						}else{
