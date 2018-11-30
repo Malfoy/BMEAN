@@ -2,6 +2,7 @@
 #include <fstream>
 #include <iostream>
 #include <vector>
+#include <set>
 #include <atomic>
 #include <mutex>
 #include <stdint.h>
@@ -85,7 +86,7 @@ void fill_index_kmers(const vector<string>& Reads,kmer2localisation& kmer_index,
 
 unordered_map<kmer,uint32_t> filter_index_kmers(kmer2localisation& kmer_index, double amount){
 	unordered_map<kmer,uint32_t> result;
-	//~ cout<<"kmer INdex size before cleaning"<<kmer_index.size()<<endl;
+	//~ cerr<<"kmer INdex size before cleaning"<<kmer_index.size()<<endl;
 	vector<kmer> to_suppress;
 	vector<uint32_t> read_ids;
 	auto it = kmer_index.begin();
@@ -107,7 +108,7 @@ unordered_map<kmer,uint32_t> filter_index_kmers(kmer2localisation& kmer_index, d
 	for(uint32_t i(0);i<to_suppress.size();++i){
 		kmer_index.erase(to_suppress[i]);
 	}
-	//~ cout<<"kmer INdex size after cleaning"<<kmer_index.size()<<endl;
+	//~ cerr<<"kmer INdex size after cleaning"<<kmer_index.size()<<endl;
 	return result;
 }
 
@@ -169,7 +170,7 @@ score_chain longest_ordered_chain_from_anchors( kmer2localisation& kmer_index, u
 		}
 	}
 
-	//~ cout<<"SCORE of "<<start<<": "<<max_chain+1<<" "<<max_score<<" "<<next_anchor<<endl;
+	//~ cerr<<"SCORE of "<<start<<": "<<max_chain+1<<" "<<max_score<<" "<<next_anchor<<endl;
 	best_chain_computed[start]={max_chain+1,max_score,next_anchor};
 	return {max_chain+1,max_score,next_anchor};
 }
@@ -312,7 +313,7 @@ vector<double> average_distance_next_anchor(kmer2localisation& kmer_index,  vect
 			//~ }
 		//~ }
 		//~ if(count==0){
-			//~ cout<<"SHOULD NOT HAPPEN"<<endl;
+			//~ cerr<<"SHOULD NOT HAPPEN"<<endl;
 			//~ for(uint32_t iD(0);iD<v_dis.size();++iD){
 				//~ sum+=v_dis[iD];
 				//~ count++;
@@ -351,7 +352,7 @@ vector<double> average_distance_next_anchor(kmer2localisation& kmer_index,  vect
 			}
 		}
 		if(count==0){
-			cout<<"SHOULD NOT HAPPEN"<<endl;
+			cerr<<"SHOULD NOT HAPPEN"<<endl;
 			for(uint32_t iD(0);iD<v_dis.size();++iD){
 				sum+=v_dis[iD];
 				count++;
@@ -366,7 +367,7 @@ vector<double> average_distance_next_anchor(kmer2localisation& kmer_index,  vect
 
 			//~ result.push_back(sum/count);
 		//~ }else{
-			//~ cout<<"SHOULD NOT HAPPEND"<<endl;cin.get();
+			//~ cerr<<"SHOULD NOT HAPPEND"<<endl;cin.get();
 			//~ result.push_back(-1);
 		//~ }
 	}
@@ -439,7 +440,7 @@ vector<vector<string>> split_reads(const vector<kmer>& anchors, const vector<dou
 		return result;
 	}
 	for(uint32_t iR(0);iR<Reads.size();++iR){
-		//~ cout<<endl;
+		//~ cerr<<endl;
 		string read=Reads[iR];
 		vector<string> split(anchors.size()+1);
 		//FIRST AND LAST REGION
@@ -472,25 +473,25 @@ vector<vector<string>> split_reads(const vector<kmer>& anchors, const vector<dou
 					//~ if(abs((int)chunk.size()-relative_positions[iA])<relative_positions[iA]*0.5){
 					if(comparable(chunk.size(), relative_positions[iA])){
 						result[iA+1].push_back(chunk);
-						//~ cout<<chunk<<".";
+						//~ cerr<<chunk<<".";
 					}else{
-						//~ cout<<"ALIEN"<<endl;
-						//~ cout<<chunk.size()<<" "<<relative_positions[iA]<<endl;
+						//~ cerr<<"ALIEN"<<endl;
+						//~ cerr<<chunk.size()<<" "<<relative_positions[iA]<<endl;
 					}
 				}else{
-					//~ cout<<'-';
+					//~ cerr<<'-';
 					continue;
 					//GOT THE LEFT ANCHOR
 					string chunk(read.substr(anchor_position1,relative_positions[iA]));
 					if(comparable(chunk.size(),get_position(kmer_index,anchors[0],0))){
 						result[iA+1].push_back(chunk);
 					}else{
-						//~ cout<<"ALIEN32"<<endl;
+						//~ cerr<<"ALIEN32"<<endl;
 					}
 				}
 			}else{
 				if(anchor_position2!=-1){
-					//~ cout<<'-';
+					//~ cerr<<'-';
 					continue;
 					//GOT THE RIGHT ANCHOR
 					if(anchor_position2>relative_positions[iA]){
@@ -499,11 +500,11 @@ vector<vector<string>> split_reads(const vector<kmer>& anchors, const vector<dou
 							result[iA+1].push_back(chunk);
 
 						}else{
-							//~ cout<<"ALIEN23"<<endl;
+							//~ cerr<<"ALIEN23"<<endl;
 						}
 					}
 				}else{
-					//~ cout<<'-';
+					//~ cerr<<'-';
 					//~ result[iA+1].push_back("");
 				}
 			}
@@ -516,7 +517,7 @@ vector<vector<string>> split_reads(const vector<kmer>& anchors, const vector<dou
 
 int read_string(vector<string>& Vstr,Sequence_T **seq,int do_switch_case,char **comment)
 {
-	//~ cout<<"------------READ---------------"<<endl;
+	//~ cerr<<"------------READ---------------"<<endl;
   int c,nseq=0,length=0;
   char seq_name[FASTA_NAME_MAX]="",
   line[SEQ_LENGTH_MAX],seq_title[FASTA_NAME_MAX]="";
@@ -526,7 +527,7 @@ int read_string(vector<string>& Vstr,Sequence_T **seq,int do_switch_case,char **
   for(uint32_t i(0);i<Vstr.size();++i){
 
 	  if(Vstr[i].empty()){continue;}
-	   //~ cout<<Vstr[i]<<endl;
+	   //~ cerr<<Vstr[i]<<endl;
 	char *cstr = new char[Vstr[i].length() + 1];
 	strcpy(cstr, Vstr[i].c_str());
 	length=Vstr[i].size();
@@ -537,7 +538,7 @@ int read_string(vector<string>& Vstr,Sequence_T **seq,int do_switch_case,char **
 	  nseq++;
   }
   stringptr_free(&tmp_seq);
-  //~ cout<<nseq<<endl;
+  //~ cerr<<nseq<<endl;
   return nseq; /* TOTAL NUMBER OF SEQUENCES CREATED */
 }
 
@@ -550,7 +551,7 @@ vector<string> write_string(LPOSequence_T *seq,int nsymbol,char symbol[],int ibu
   char **seq_pos=NULL,*p=NULL,*include_in_save=NULL;
 
   nring=xlate_lpo_to_al(seq,nsymbol,symbol,ibundle, '-',&seq_pos,&p,&include_in_save);
-  //~ cout<<"LPO2al"<<endl;
+  //~ cerr<<"LPO2al"<<endl;
   LOOPF (i,seq->nsource_seq) { /* NOW WRITE OUT FASTA FORMAT */
     //~ if (ibundle<0 || seq->source_seq[i].bundle_id == ibundle) { /* OR JUST THIS BUNDLE*/
       //~ fprintf(ifile,">%s",seq->source_seq[i].name);
@@ -617,29 +618,29 @@ vector<string> consensus_POA( vector<string>& W){
 		score_matrix_init=true;
 	}
 
-	//~ cout<<"GO INSERTION §"<<endl;
+	//~ cerr<<"GO INSERTION §"<<endl;
 
 	nseq = read_string (W, &seq, do_switch_case, &comment);
-	//~ cout<<"GO INIT AS LPO"<<endl;
+	//~ cerr<<"GO INIT AS LPO"<<endl;
 	CALLOC (input_seqs, max_input_seqs, LPOSequence_T *);
 	for (i=0; i<nseq; i++) {
-		//~ cout<<"i"<<i<<endl;
+		//~ cerr<<"i"<<i<<endl;
 		input_seqs[n_input_seqs++] = &(seq[i]);
-		//~ cout<<"inputseqnadine"<<endl;
+		//~ cerr<<"inputseqnadine"<<endl;
 		initialize_seqs_as_lpo(1,&(seq[i]),&score_matrix);//IMPORTANT
-		//~ cout<<"init sucdeees"<<endl;
+		//~ cerr<<"init sucdeees"<<endl;
 		if (n_input_seqs == max_input_seqs) {
 			max_input_seqs *= 2;
 			REALLOC (input_seqs, max_input_seqs, LPOSequence_T *);
 		}
 	}
-	//~ cout<<"GO CONSENSUS"<<endl;
+	//~ cerr<<"GO CONSENSUS"<<endl;
 	lpo_out = buildup_progressive_lpo (n_input_seqs, input_seqs, &score_matrix,use_aggressive_fusion, do_progressive, pair_score_file,matrix_scoring_function, do_global, do_preserve_sequence_order);
 	//~ generate_lpo_bundles(lpo_out,bundling_threshold);
-	//~ cout<<"GO OUTPUT"<<endl;
+	//~ cerr<<"GO OUTPUT"<<endl;
 	vector<string> result(write_string(lpo_out,score_matrix.nsymbol,score_matrix.symbol,ibundle));
-	//~ cout<<result<<endl;
-	//~ cout<<"CONSENSUS"<<endl;
+	//~ cerr<<result<<endl;
+	//~ cerr<<"CONSENSUS"<<endl;
 	return result;
 }
 
@@ -682,25 +683,30 @@ vector<string> easy_consensus(vector<string> V){
 		return V;
 	}
 	//~ uint32_t maximum(0);
+	std::set<std::string> mySet;
 	for(uint32_t iV(0);iV<V.size();++iV){
-		//~ cout<<V[iV]<<endl;
+		//~ cerr<<V[iV]<<endl;
 		//~ maximum=max(maximum,(uint32_t)V[iV].size());
 		//~ if(V[iV].size()!=0){
 			//~ non_empty++;
 			//~ continue;
 		//~ }
-		if(V[iV].size()!=V[0].size()){
-			V=consensus_POA(V);
-			break;
-		}
+		mySet.insert(V[iV]);
 	}
-	//~ cout<<non_empty<<"ne";
+	// if(V[iV].size()!=V[0].size()){
+	if(mySet.size() > 1) {
+		V=consensus_POA(V);
+		// break;
+	} else {
+		return {V[0]};
+	}
+	//~ cerr<<non_empty<<"ne";
 	//~ cin.get();
 	string result;
 	//~ for(uint i(0);i<V.size();++i){
-		//~ cout<<V[i]<<endl;
+		//~ cerr<<V[i]<<endl;
 	//~ }
-	//~ cout<<"END PP"<<endl;
+	//~ cerr<<"END PP"<<endl;
 	for(uint32_t iS(0);iS<V[0].size();++iS){
 		uint32_t cA,cC,cG,cT,cM;
 		cM=cA=cC=cG=cT=0;
@@ -715,12 +721,12 @@ vector<string> easy_consensus(vector<string> V){
 				case 'T': ++cT;break;
 				default:
 				cM++;
-				//~ cout<<"NOPE"<<V[iV][iS]<<"?"<<endl;
-				//~ cout<<iS<<" "<<V[iV].size()<<" "<<iV<<" "<<V.size()<<endl;
+				//~ cerr<<"NOPE"<<V[iV][iS]<<"?"<<endl;
+				//~ cerr<<iS<<" "<<V[iV].size()<<" "<<iV<<" "<<V.size()<<endl;
 			}
 		}
 		if(cM>cA and cM>cC and cM>cT and cM>cG){
-			result+=('-');
+			// result+=('-');
 			continue;
 		}
 		if(cA>cC and cA>cG and cA>cT){
@@ -740,11 +746,12 @@ vector<string> easy_consensus(vector<string> V){
 			continue;
 		}
 		result+=(V[0][iS]);
+		// result+='N';
 		continue;
-		//~ cout<<"TIE"<<endl;
+		//~ cerr<<"TIE"<<endl;
 		return V;
 	}
-	//~ cout<<"EASYCONSENSU end"<<endl;
+	//~ cerr<<"EASYCONSENSU end"<<endl;
 
 	return {result};
 }
@@ -756,12 +763,12 @@ vector<vector<string>> global_consensus(const  vector<vector<string>>& V, uint32
 	string stacked_consensus;
 	for(uint32_t iV(0);iV<V.size();++iV){
 		if(V[iV].size()==0){
-			cout<<"MISSING WINDOWS"<<endl;
+			cerr<<"MISSING WINDOWS"<<endl;
 			continue;
 		}
 		vector<string> consensus(easy_consensus(V[iV]));
-		//~ cout<<"EASYCONSENSUS"<<endl;
-		//~ cout<<consensus[0]<<endl;
+		//~ cerr<<"EASYCONSENSUS"<<endl;
+		//~ cerr<<consensus[0]<<endl;
 		//~ if(consensus.size()==1){
 			stacked_consensus+=consensus[0];
 		//~ }else{
@@ -774,7 +781,7 @@ vector<vector<string>> global_consensus(const  vector<vector<string>>& V, uint32
 		//~ }
 	}
 	if(stacked_consensus.size()!=0){
-		stacked_consensus.erase (remove(stacked_consensus.begin(), stacked_consensus.end(), '-'), stacked_consensus.end());
+		// stacked_consensus.erase (remove(stacked_consensus.begin(), stacked_consensus.end(), '-'), stacked_consensus.end());
 		vector<string> vect(1, stacked_consensus);
 		result.push_back(vect);
 		stacked_consensus="";
@@ -805,46 +812,46 @@ vector<vector<string>> MSABMAAC(const vector<string>& Reads,uint32_t k, double e
 	//~ VTest.push_back("CTGACTGACCCCGTACGTCA");
 	//~ auto nadine({VTest});
 	//~ auto GC(global_consensus(nadine,1));
-	//~ cout<<GC[0][0]<<endl;
+	//~ cerr<<GC[0][0]<<endl;
 	//~ exit(0);
 
 
 
 	kmer2localisation kmer_index;
 	fill_index_kmers(Reads,kmer_index,kmer_size);
-	//~ cout<<"PHASE 1 done"<<endl;
+	//~ cerr<<"PHASE 1 done"<<endl;
 	//~ return {};
 
 	auto kmer_count(filter_index_kmers(kmer_index,edge_solidity));
 	//~ auto kmer_count(filter_index_kmers(kmer_index,percent_shared));
-	//~ cout<<"PHASE 2.1 done"<<endl;
+	//~ cerr<<"PHASE 2.1 done"<<endl;
 	auto template_read(get_template(kmer_index,Reads[0],kmer_size));
-	//~ cout<<"PHASE 2 done"<<endl;
+	//~ cerr<<"PHASE 2 done"<<endl;
 
 
 	vector<kmer> anchors(longest_ordered_chain(kmer_index, template_read,edge_solidity));
-	//~ cout<<"PHASE 3 done"<<endl;
+	//~ cerr<<"PHASE 3 done"<<endl;
 
 
 	vector<double> relative_positions=(average_distance_next_anchor(kmer_index,anchors,kmer_count,false));
-	//~ cout<<"PHASE 4 done"<<endl;
+	//~ cerr<<"PHASE 4 done"<<endl;
 
 
 	vector<vector<string>> result(split_reads(anchors,relative_positions,Reads,kmer_index,kmer_size));
-	//~ cout<<"PHASE 5 done"<<endl;
+	//~ cerr<<"PHASE 5 done"<<endl;
 
 
-	cout<<""<<result.size()<<"	";
+	cerr<<""<<result.size()<<"	";
 	//~ for(uint i(0);i<result.size();++i){
 		//~ for(uint j(0);j<result[i].size();++j){
-			//~ cout<<result[i][j]<<" ";
+			//~ cerr<<result[i][j]<<" ";
 		//~ }
-		//~ cout<<endl;
+		//~ cerr<<endl;
 	//~ }
 	//~ cin.get();
 
 	result=global_consensus(result,Reads.size());
-	//~ cout<<"PHASE 6 done"<<endl;
+	//~ cerr<<"PHASE 6 done"<<endl;
 
 	return result;
 }
