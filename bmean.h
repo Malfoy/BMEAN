@@ -26,7 +26,7 @@ using namespace std;
 
 
 
-vector<vector<string>> MSABMAAC(const vector<string>& nadine,uint32_t la,double cuisine);
+std::pair<std::vector<std::vector<std::string>>, std::unordered_map<kmer, unsigned>> MSABMAAC(const vector<string>& nadine,uint32_t la,double cuisine, unsigned solidThresh);
 
 
 

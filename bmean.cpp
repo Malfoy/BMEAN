@@ -50,7 +50,8 @@ typedef unordered_map<kmer,vector<localisation>> kmer2localisation;
 
 
 
-void fill_index_kmers(const vector<string>& Reads,kmer2localisation& kmer_index,uint32_t kmer_size){
+void fill_index_kmers(const vector<string>& Reads,kmer2localisation& kmer_index,uint32_t kmer_size, std::unordered_map<kmer, unsigned>& merCounts, unsigned solidThresh){
+	std::unordered_map<kmer, unsigned> tmpMerCounts;
 	string read;
 	uint32_t offsetUpdateKmer=1<<(2*kmer_size);
 	unordered_map<kmer,bool> repeated_kmer;
@@ -63,6 +64,7 @@ void fill_index_kmers(const vector<string>& Reads,kmer2localisation& kmer_index,
 		if(read.size()<kmer_size){continue;}
 		kmer seq(str2num(read.substr(0,kmer_size)));
 		kmer_index[seq].push_back(here);
+		tmpMerCounts[seq]++;
 		if(++local_kmer[seq]>1){
 			repeated_kmer[seq]=true;
 		}
@@ -70,6 +72,7 @@ void fill_index_kmers(const vector<string>& Reads,kmer2localisation& kmer_index,
 			updateK(seq,read[kmer_size+ir],offsetUpdateKmer);
 			++here.position;
 			kmer_index[seq].push_back(here);
+			tmpMerCounts[seq]++;
 			if(++local_kmer[seq]>1){
 				repeated_kmer[seq]=true;
 			}
@@ -79,6 +82,12 @@ void fill_index_kmers(const vector<string>& Reads,kmer2localisation& kmer_index,
 	while(it != repeated_kmer.end()){
 		kmer_index.erase(it->first);
 		++it;
+	}
+
+	for (auto p : tmpMerCounts) {
+		if (p.second >= solidThresh) {
+			merCounts[p.first] = p.second;
+		}
 	}
 }
 
@@ -792,7 +801,7 @@ vector<vector<string>> global_consensus(const  vector<vector<string>>& V, uint32
 
 
 
-vector<vector<string>> MSABMAAC(const vector<string>& Reads,uint32_t k, double edge_solidity){
+std::pair<std::vector<std::vector<std::string>>, std::unordered_map<kmer, unsigned>> MSABMAAC(const vector<string>& Reads,uint32_t k, double edge_solidity, unsigned solidThresh){
 	int kmer_size(k);
 	//~ vector<string> VTest;;
 	//~ VTest.push_back("CTGACTGACCCCGTACGTCA");
@@ -818,7 +827,8 @@ vector<vector<string>> MSABMAAC(const vector<string>& Reads,uint32_t k, double e
 
 
 	kmer2localisation kmer_index;
-	fill_index_kmers(Reads,kmer_index,kmer_size);
+	std::unordered_map<kmer, unsigned> merCounts;
+	fill_index_kmers(Reads,kmer_index,kmer_size,merCounts, solidThresh);
 	//~ cerr<<"PHASE 1 done"<<endl;
 	//~ return {};
 
@@ -853,5 +863,5 @@ vector<vector<string>> MSABMAAC(const vector<string>& Reads,uint32_t k, double e
 	result=global_consensus(result,Reads.size());
 	//~ cerr<<"PHASE 6 done"<<endl;
 
-	return result;
+	return std::make_pair(result, merCounts);
 }
