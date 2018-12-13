@@ -64,7 +64,7 @@ void fill_index_kmers(const vector<string>& Reads,kmer2localisation& kmer_index,
 		if(read.size()<kmer_size){continue;}
 		kmer seq(str2num(read.substr(0,kmer_size)));
 		kmer_index[seq].push_back(here);
-		tmpMerCounts[seq]++;
+		// tmpMerCounts[seq]++;
 		if(++local_kmer[seq]>1){
 			repeated_kmer[seq]=true;
 		}
@@ -72,23 +72,36 @@ void fill_index_kmers(const vector<string>& Reads,kmer2localisation& kmer_index,
 			updateK(seq,read[kmer_size+ir],offsetUpdateKmer);
 			++here.position;
 			kmer_index[seq].push_back(here);
-			tmpMerCounts[seq]++;
+			// tmpMerCounts[seq]++;
 			if(++local_kmer[seq]>1){
 				repeated_kmer[seq]=true;
 			}
 		}
 	}
+	// auto it = repeated_kmer.begin();
+	// while(it != repeated_kmer.end()){
+	// 	kmer_index.erase(it->first);
+	// 	++it;
+	// }
+
+	// for (auto p : tmpMerCounts) {
+	// 	if (p.second >= solidThresh) {
+	// 		merCounts[p.first] = p.second;
+	// 	}
+	// }
+
+	for (auto p : kmer_index) {
+		if (p.second.size() >= solidThresh) {
+			merCounts[p.first] = p.second.size();
+		}
+	}
+	
 	auto it = repeated_kmer.begin();
 	while(it != repeated_kmer.end()){
 		kmer_index.erase(it->first);
 		++it;
 	}
 
-	for (auto p : tmpMerCounts) {
-		if (p.second >= solidThresh) {
-			merCounts[p.first] = p.second;
-		}
-	}
 }
 
 
