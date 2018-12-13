@@ -6,6 +6,7 @@
 #include <vector>
 #include <string>
 #include "utils.h"
+#include <cmath>
 
 
 extern "C"{
