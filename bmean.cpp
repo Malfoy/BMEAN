@@ -78,18 +78,7 @@ void fill_index_kmers(const vector<string>& Reads,kmer2localisation& kmer_index,
 			}
 		}
 	}
-	// auto it = repeated_kmer.begin();
-	// while(it != repeated_kmer.end()){
-	// 	kmer_index.erase(it->first);
-	// 	++it;
-	// }
-
-	// for (auto p : tmpMerCounts) {
-	// 	if (p.second >= solidThresh) {
-	// 		merCounts[p.first] = p.second;
-	// 	}
-	// }
-
+	
 	for (auto p : kmer_index) {
 		if (p.second.size() >= solidThresh) {
 			merCounts[p.first] = p.second.size();
@@ -661,6 +650,20 @@ vector<string> consensus_POA( vector<string>& W){
 	//~ generate_lpo_bundles(lpo_out,bundling_threshold);
 	//~ cerr<<"GO OUTPUT"<<endl;
 	vector<string> result(write_string(lpo_out,score_matrix.nsymbol,score_matrix.symbol,ibundle));
+	//for (int i = 0; i < nseq; i++) {
+	//	char* s = (seq+i)->sequence;
+	//	delete[] s;
+	//}
+	for (i=0;i<n_input_seqs;i++) {
+	    for (j=0;j<nseq;j++) {
+	      if (input_seqs[i]==&(seq[j]))
+	        break;
+	    }
+	    free_lpo_sequence(input_seqs[i],(j==nseq));
+	  }
+	  FREE (input_seqs);
+	FREE(seq);
+
 	//~ cerr<<result<<endl;
 	//~ cerr<<"CONSENSUS"<<endl;
 	return result;
