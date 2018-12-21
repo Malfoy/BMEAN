@@ -363,7 +363,7 @@ vector<double> average_distance_next_anchor(kmer2localisation& kmer_index,  vect
 			}
 		}
 		if(count==0){
-			cerr<<"SHOULD NOT HAPPEN"<<endl;
+			// cerr<<"SHOULD NOT HAPPEN"<<endl;
 			for(uint32_t iD(0);iD<v_dis.size();++iD){
 				sum+=v_dis[iD];
 				count++;
@@ -788,7 +788,7 @@ vector<vector<string>> global_consensus(const  vector<vector<string>>& V, uint32
 	string stacked_consensus;
 	for(uint32_t iV(0);iV<V.size();++iV){
 		if(V[iV].size()==0){
-			cerr<<"MISSING WINDOWS"<<endl;
+			// cerr<<"MISSING WINDOWS"<<endl;
 			continue;
 		}
 		vector<string> consensus(easy_consensus(V[iV]));
@@ -867,7 +867,7 @@ std::pair<std::vector<std::vector<std::string>>, std::unordered_map<kmer, unsign
 	//~ cerr<<"PHASE 5 done"<<endl;
 
 
-	cerr<<""<<result.size()<<"	";
+	// cerr<<""<<result.size()<<"	";
 	//~ for(uint i(0);i<result.size();++i){
 		//~ for(uint j(0);j<result[i].size();++j){
 			//~ cerr<<result[i][j]<<" ";
