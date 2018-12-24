@@ -539,16 +539,19 @@ int read_string(vector<string>& Vstr,Sequence_T **seq,int do_switch_case,char **
 
 	  if(Vstr[i].empty()){continue;}
 	   //~ cerr<<Vstr[i]<<endl;
-	char *cstr = new char[Vstr[i].length() + 1];
+	// char *cstr = new char[Vstr[i].length() + 1];
+	char *cstr = (char*) malloc(Vstr[i].length() + 1);
+	// char cstr[Vstr[i].length() + 1];
 	strcpy(cstr, Vstr[i].c_str());
 	length=Vstr[i].size();
 	tmp_seq.p=cstr;
 
 	//TODO DELETE
-	if (create_seq(nseq,seq,seq_name,seq_title,tmp_seq.p,do_switch_case))
+	if (create_seq(nseq,seq,seq_name,seq_title,tmp_seq.p,do_switch_case)) {
 	  nseq++;
+  	  stringptr_free(&tmp_seq);
+  	}
   }
-  stringptr_free(&tmp_seq);
   //~ cerr<<nseq<<endl;
   return nseq; /* TOTAL NUMBER OF SEQUENCES CREATED */
 }
@@ -666,6 +669,8 @@ vector<string> consensus_POA( vector<string>& W){
 
 	//~ cerr<<result<<endl;
 	//~ cerr<<"CONSENSUS"<<endl;
+	// free(score_matrix.gap_penalty_x);
+	// free(score_matrix.gap_penalty_y);
 	return result;
 }
 
