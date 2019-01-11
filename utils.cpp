@@ -33,7 +33,6 @@ kmer str2num(const string& str){
 
 string kmer2str(kmer k,uint32_t nuc){
 	string result;
-	std::cerr << "nuc is : " << nuc << std::endl;
 	for(uint32_t i(0);i<nuc;++i){
 		switch(k%4){
 			case 0:  result.push_back('A');break;
