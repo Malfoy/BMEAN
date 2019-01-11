@@ -880,7 +880,8 @@ std::pair<std::vector<std::vector<std::string>>, std::unordered_map<kmer, unsign
 		//~ cerr<<endl;
 	//~ }
 	//~ cin.get();
-
+	// vector<vector<string>> result;
+	// result.push_back(Reads);
 	result=global_consensus(result,Reads.size());
 	//~ cerr<<"PHASE 6 done"<<endl;
 
