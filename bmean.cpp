@@ -78,13 +78,13 @@ void fill_index_kmers(const vector<string>& Reads,kmer2localisation& kmer_index,
 			}
 		}
 	}
-	
+
 	for (auto p : kmer_index) {
 		if (p.second.size() >= solidThresh) {
 			merCounts[p.first] = p.second.size();
 		}
 	}
-	
+
 	auto it = repeated_kmer.begin();
 	while(it != repeated_kmer.end()){
 		kmer_index.erase(it->first);
@@ -107,7 +107,7 @@ unordered_map<kmer,uint32_t> filter_index_kmers(kmer2localisation& kmer_index, d
 		}
 		//AVOID TO COUNT MULTIPLE OCCURENCE OF A KMER WITHIN A READ
 		sort( read_ids.begin(), read_ids.end() );
-		int uniqueCount = unique(read_ids.begin(), read_ids.end()) - read_ids.begin();
+		int uniqueCount =distance(read_ids.begin(), unique(read_ids.begin(), read_ids.end())) ;
 		if(uniqueCount<amount){
 			to_suppress.push_back(it->first);
 		}else{
@@ -121,6 +121,45 @@ unordered_map<kmer,uint32_t> filter_index_kmers(kmer2localisation& kmer_index, d
 	}
 	//~ cerr<<"kmer INdex size after cleaning"<<kmer_index.size()<<endl;
 	return result;
+}
+
+
+void erase_current_element(vector<localisation>& V,uint n){
+	for(uint i(n);i+1<V.size();++i){
+		V[i]=V[i+1];
+	}
+	V.resize(V.size()-1);
+}
+
+
+
+void clean_suspcious_reads(kmer2localisation& kmer_index, uint read_number,double threshold){
+	vector<bool> read_ok(read_number,true);
+	vector<uint32_t> read_seed_number(read_number,0);
+	{
+		auto it = kmer_index.begin();
+		while(it != kmer_index.end()){
+			for(uint32_t i(0);i<it->second.size();++i){
+				read_seed_number[(it->second[i].read_id)]++;
+			}
+			++it;
+		}
+		for(uint i(0);i< read_number;++i){
+			if(read_seed_number[i]<threshold){
+				read_ok[i]=false;
+			}
+		}
+	}
+	//~ cout<<"goo"<<endl;
+	auto it = kmer_index.begin();
+	while(it != kmer_index.end()){
+		for(uint32_t i(0);i<it->second.size();++i){
+			if(not read_ok[it->second[i].read_id]){
+				erase_current_element(it->second,i);
+			}
+		}
+		++it;
+	}
 }
 
 
@@ -426,14 +465,14 @@ vector<vector<string>> split_reads_old(const vector<kmer>& anchors, const vector
 					split[iA+1]=read.substr(anchor_position1,anchor_position2-anchor_position1);
 				}else{
 					//GOT THE LEFT ANCHOR
-					split[iA+1]=read.substr(anchor_position1,relative_positions[iA]);
+					//~ split[iA+1]=read.substr(anchor_position1,relative_positions[iA]);
 				}
 			}else{
 				if(anchor_position2!=-1){
 					//GOT THE RIGHT ANCHOR
-					if(anchor_position2>relative_positions[iA]){
-						split[iA+1]=read.substr(anchor_position2-relative_positions[iA],relative_positions[iA]);
-					}
+					//~ if(anchor_position2>relative_positions[iA]){
+						//~ split[iA+1]=read.substr(anchor_position2-relative_positions[iA],relative_positions[iA]);
+					//~ }
 				}
 			}
 		}
@@ -854,6 +893,8 @@ std::pair<std::vector<std::vector<std::string>>, std::unordered_map<kmer, unsign
 	//~ return {};
 
 	auto kmer_count(filter_index_kmers(kmer_index,edge_solidity));
+
+	clean_suspcious_reads(kmer_index,Reads.size(),200);
 	//~ auto kmer_count(filter_index_kmers(kmer_index,percent_shared));
 	//~ cerr<<"PHASE 2.1 done"<<endl;
 	auto template_read(get_template(kmer_index,Reads[0],kmer_size));
