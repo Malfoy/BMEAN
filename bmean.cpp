@@ -565,7 +565,7 @@ vector<vector<string>> split_reads(const vector<kmer>& anchors, const vector<dou
 
 
 
-int read_string(vector<string>& Vstr,Sequence_T **seq,int do_switch_case,char **comment)
+int read_string(vector<string>& Vstr,Sequence_T **seq,int do_switch_case,char **comment, int max_seqs)
 {
 	//~ cerr<<"------------READ---------------"<<endl;
   int c,nseq=0,length=0;
@@ -574,9 +574,12 @@ int read_string(vector<string>& Vstr,Sequence_T **seq,int do_switch_case,char **
   char *p;
   stringptr tmp_seq=STRINGPTR_EMPTY_INIT;
 
-  for(uint32_t i(0);i<Vstr.size();++i){
+  for(uint32_t i(0);i<Vstr.size() and nseq < max_seqs;++i){
 
-	  if(Vstr[i].empty()){continue;}
+	  if(Vstr[i].empty()){
+	  	// std::cerr << "was empty" << std::endl;
+	  	continue;
+	  }
 	   //~ cerr<<Vstr[i]<<endl;
 	// char *cstr = new char[Vstr[i].length() + 1];
 	char *cstr = (char*) malloc(Vstr[i].length() + 1);
@@ -638,10 +641,17 @@ vector<string> write_string(LPOSequence_T *seq,int nsymbol,char symbol[],int ibu
 
 
 vector<string> consensus_POA( vector<string>& W){
+	// std::cerr << "W.size() = " << W.size() << std::endl;
+	// int meanSize = 0;
+	// for (int kk = 0; kk < W.size(); kk++) {
+	// 	meanSize += W[kk].length();
+	// }
+	// std::cerr << "meanLength : " << meanSize / W.size() << std::endl;
 	 int i,j,ibundle=0,nframe_seq=0,use_reverse_complement=0;
 	  int nseq=0,do_switch_case=dont_switch_case,do_analyze_bundles=0;
 	  int is_silent = 0;
 	  int nseq_in_list=0,n_input_seqs=0,max_input_seqs=100;
+	  // max_input_seqs = W.size();
 	  char score_file[256],seq_file[256],po_list_entry_filename[256],*comment=NULL,*al_name="test align";
 	  //~ ResidueScoreMatrix_T score_matrix; /* DEFAULT GAP PENALTIES*/
 	  LPOSequence_T *seq=NULL,*lpo_out=NULL,*frame_seq=NULL,*dna_lpo=NULL,*lpo_in=NULL;
@@ -658,7 +668,7 @@ vector<string> consensus_POA( vector<string>& W){
 		report_consensus_seqs=0,report_major_allele=0,use_aggressive_fusion=0;
 	  int show_allele_evidence=0,please_collapse_lines=0,keep_all_links=0;
 	  int remove_listed_seqs=0,remove_listed_seqs2=0,please_report_similarity;
-	  int do_global=0, do_progressive=0, do_preserve_sequence_order=0;
+	  int do_global=1, do_progressive=0,do_preserve_sequence_order=0;
 	  char *reference_seq_name="CONSENS%d",*clustal_out=NULL;
 
   //~ black_flag_init(argv[0],PROGRAM_VERSION);
@@ -672,26 +682,42 @@ vector<string> consensus_POA( vector<string>& W){
 	}
 
 	//~ cerr<<"GO INSERTION §"<<endl;
-
-	nseq = read_string (W, &seq, do_switch_case, &comment);
+	// std::cerr << "go read_string" << std::endl;
+	nseq = read_string (W, &seq, do_switch_case, &comment, max_input_seqs);
+	if (nseq == 0) {
+		std::vector<string> res;
+		res.push_back("");
+		return res;
+	}
+	// std::cerr << "ok" << std::endl;
 	//~ cerr<<"GO INIT AS LPO"<<endl;
 	CALLOC (input_seqs, max_input_seqs, LPOSequence_T *);
+	// std::cerr << "nseq : " << nseq << std::endl;
+	// std::cerr << "min : " << std::min(nseq, max_input_seqs) << std::endl;
 	for (i=0; i<nseq; i++) {
 		//~ cerr<<"i"<<i<<endl;
 		input_seqs[n_input_seqs++] = &(seq[i]);
 		//~ cerr<<"inputseqnadine"<<endl;
+		// std::cerr << "go initialize_seqs_as_lpo" << std::endl;
 		initialize_seqs_as_lpo(1,&(seq[i]),&score_matrix);//IMPORTANT
+		// std::cerr << "ok" << std::endl;
 		//~ cerr<<"init sucdeees"<<endl;
 		if (n_input_seqs == max_input_seqs) {
 			max_input_seqs *= 2;
+			// std::cerr << "go REALLOC" << std::endl;
 			REALLOC (input_seqs, max_input_seqs, LPOSequence_T *);
+			// std::cerr << "ok" << std::endl;
 		}
 	}
 	//~ cerr<<"GO CONSENSUS"<<endl;
+	// std::cerr << "go buildup_progressive_lpo" << std::endl;
 	lpo_out = buildup_progressive_lpo (n_input_seqs, input_seqs, &score_matrix,use_aggressive_fusion, do_progressive, pair_score_file,matrix_scoring_function, do_global, do_preserve_sequence_order);
+	// std::cerr << "ok" << std::endl;
 	//~ generate_lpo_bundles(lpo_out,bundling_threshold);
 	//~ cerr<<"GO OUTPUT"<<endl;
+	// std::cerr << "go write_string" << std::endl;
 	vector<string> result(write_string(lpo_out,score_matrix.nsymbol,score_matrix.symbol,ibundle));
+	// std::cerr << "ok" << std::endl;
 	//for (int i = 0; i < nseq; i++) {
 	//	char* s = (seq+i)->sequence;
 	//	delete[] s;
@@ -701,13 +727,15 @@ vector<string> consensus_POA( vector<string>& W){
 	      if (input_seqs[i]==&(seq[j]))
 	        break;
 	    }
+	    // std::cerr << "go free_lpo_sequence" << std::endl;
 	    free_lpo_sequence(input_seqs[i],(j==nseq));
+	    // std::cerr << "ok" << std::endl;
 	  }
 	  FREE (input_seqs);
 	FREE(seq);
 
 	//~ cerr<<result<<endl;
-	//~ cerr<<"CONSENSUS"<<endl;
+	// cerr<<"CONSENSUS"<<endl;
 	// free(score_matrix.gap_penalty_x);
 	// free(score_matrix.gap_penalty_y);
 	return result;
@@ -764,7 +792,9 @@ vector<string> easy_consensus(vector<string> V){
 	}
 	// if(V[iV].size()!=V[0].size()){
 	if(mySet.size() > 1) {
+		// std::cerr << "go consensus_POA" << std::endl;
 		V=consensus_POA(V);
+		// std::cerr << "ok" << std::endl;
 		// break;
 	} else {
 		return {V[0]};
@@ -814,7 +844,9 @@ vector<string> easy_consensus(vector<string> V){
 			result+=('T');
 			continue;
 		}
-		result+=(V[0][iS]);
+		if (V[0][iS] != '-') {
+			result+=(V[0][iS]);
+		}
 		// result+='N';
 		continue;
 		//~ cerr<<"TIE"<<endl;
@@ -835,7 +867,9 @@ vector<vector<string>> global_consensus(const  vector<vector<string>>& V, uint32
 			// cerr<<"MISSING WINDOWS"<<endl;
 			continue;
 		}
+		// std::cerr << "go easy_consensus" << std::endl;
 		vector<string> consensus(easy_consensus(V[iV]));
+		// std::cerr << "ok" << std::endl;
 		//~ cerr<<"EASYCONSENSUS"<<endl;
 		//~ cerr<<consensus[0]<<endl;
 		//~ if(consensus.size()==1){
@@ -888,28 +922,47 @@ std::pair<std::vector<std::vector<std::string>>, std::unordered_map<kmer, unsign
 
 	kmer2localisation kmer_index;
 	std::unordered_map<kmer, unsigned> merCounts;
+	// std::cerr << "1" << std::endl;
 	fill_index_kmers(Reads,kmer_index,kmer_size,merCounts, solidThresh);
-	//~ cerr<<"PHASE 1 done"<<endl;
+	// std::cerr << "ok" << std::endl;
+	// cerr<<"PHASE 1 done"<<endl;
 	//~ return {};
 
+	// std::cerr << "2" << std::endl;
 	auto kmer_count(filter_index_kmers(kmer_index,edge_solidity));
+	// std::cerr << "ok" << std::endl;
 
-	clean_suspcious_reads(kmer_index,Reads.size(),200);
+	// clean_suspcious_reads(kmer_index,Reads.size(),50);
 	//~ auto kmer_count(filter_index_kmers(kmer_index,percent_shared));
 	//~ cerr<<"PHASE 2.1 done"<<endl;
+	// std::cerr << "3" << std::endl;
 	auto template_read(get_template(kmer_index,Reads[0],kmer_size));
+	// std::cerr << "ok" << std::endl;
 	//~ cerr<<"PHASE 2 done"<<endl;
 
-
+	// std::cerr << "4" << std::endl;
 	vector<kmer> anchors(longest_ordered_chain(kmer_index, template_read,edge_solidity));
+	// std::cerr << "ok" << std::endl;
 	//~ cerr<<"PHASE 3 done"<<endl;
 
-
+	// std::cerr << "5" << std::endl;
 	vector<double> relative_positions=(average_distance_next_anchor(kmer_index,anchors,kmer_count,false));
+	// std::cerr << "ok" << std::endl;
 	//~ cerr<<"PHASE 4 done"<<endl;
 
-
+	// std::cerr << "6" << std::endl;
 	vector<vector<string>> result(split_reads(anchors,relative_positions,Reads,kmer_index,kmer_size));
+	// std::cerr << "splits : " << result.size() << std::endl;
+	if (result.size() < 10) {
+		// std::cerr << "anchors nb : " << result.size() << std::endl;
+		// std::cerr << "support : " << Reads.size() << std::endl;
+		std::vector<std::string> res;
+		res.push_back("");
+		std::vector<std::vector<std::string>> fRes;
+		// fRes.push_back(res);
+		return std::make_pair(fRes, merCounts);
+	}
+	// std::cerr << "ok" << std::endl;
 	//~ cerr<<"PHASE 5 done"<<endl;
 
 
@@ -923,7 +976,9 @@ std::pair<std::vector<std::vector<std::string>>, std::unordered_map<kmer, unsign
 	//~ cin.get();
 	// vector<vector<string>> result;
 	// result.push_back(Reads);
+	// std::cerr << "7" << std::endl;
 	result=global_consensus(result,Reads.size());
+	// std::cerr << "ok" << std::endl;
 	//~ cerr<<"PHASE 6 done"<<endl;
 
 	return std::make_pair(result, merCounts);
