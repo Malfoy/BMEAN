@@ -46,7 +46,7 @@ void expe(duration<double>& elapsed_seconds,uint& miss,uint size ){
 		input.push_back(str_mut);
 	}
 	auto start = std::chrono::system_clock::now();
-	auto r(MSABMAAC(input,8,10,1));
+	auto r(MSABMAAC(input,8,10,1,1));
 	auto result = r.first;
 	auto  end = std::chrono::system_clock::now();
 	elapsed_seconds+= (end - start);

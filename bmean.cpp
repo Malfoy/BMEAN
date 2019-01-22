@@ -895,7 +895,7 @@ vector<vector<string>> global_consensus(const  vector<vector<string>>& V, uint32
 
 
 
-std::pair<std::vector<std::vector<std::string>>, std::unordered_map<kmer, unsigned>> MSABMAAC(const vector<string>& Reads,uint32_t k, double edge_solidity, unsigned solidThresh){
+std::pair<std::vector<std::vector<std::string>>, std::unordered_map<kmer, unsigned>> MSABMAAC(const vector<string>& Reads,uint32_t k, double edge_solidity, unsigned solidThresh, unsigned minAnchors){
 	int kmer_size(k);
 	//~ vector<string> VTest;;
 	//~ VTest.push_back("CTGACTGACCCCGTACGTCA");
@@ -953,7 +953,7 @@ std::pair<std::vector<std::vector<std::string>>, std::unordered_map<kmer, unsign
 	// std::cerr << "6" << std::endl;
 	vector<vector<string>> result(split_reads(anchors,relative_positions,Reads,kmer_index,kmer_size));
 	// std::cerr << "splits : " << result.size() << std::endl;
-	if (result.size() < 10) {
+	if (result.size() < minAnchors) {
 		// std::cerr << "anchors nb : " << result.size() << std::endl;
 		// std::cerr << "support : " << Reads.size() << std::endl;
 		std::vector<std::string> res;
