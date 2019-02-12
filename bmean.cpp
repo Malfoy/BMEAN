@@ -650,7 +650,7 @@ vector<string> consensus_POA( vector<string>& W){
 	 int i,j,ibundle=0,nframe_seq=0,use_reverse_complement=0;
 	  int nseq=0,do_switch_case=dont_switch_case,do_analyze_bundles=0;
 	  int is_silent = 0;
-	  int nseq_in_list=0,n_input_seqs=0,max_input_seqs=100;
+	  int nseq_in_list=0,n_input_seqs=0,max_input_seqs=150;
 	  // max_input_seqs = W.size();
 	  char score_file[256],seq_file[256],po_list_entry_filename[256],*comment=NULL,*al_name="test align";
 	  //~ ResidueScoreMatrix_T score_matrix; /* DEFAULT GAP PENALTIES*/
@@ -954,6 +954,7 @@ std::pair<std::vector<std::vector<std::string>>, std::unordered_map<kmer, unsign
 	vector<vector<string>> result(split_reads(anchors,relative_positions,Reads,kmer_index,kmer_size));
 	// std::cerr << "splits : " << result.size() << std::endl;
 	if (result.size() < minAnchors) {
+		// std::cerr << "to few anchors" << std::endl;
 		// std::cerr << "anchors nb : " << result.size() << std::endl;
 		// std::cerr << "support : " << Reads.size() << std::endl;
 		std::vector<std::string> res;
