@@ -640,7 +640,7 @@ vector<string> write_string(LPOSequence_T *seq,int nsymbol,char symbol[],int ibu
 
 
 
-vector<string> consensus_POA( vector<string>& W, unsigned maxMSA){
+vector<string> consensus_POA( vector<string>& W, unsigned maxMSA, string path){
 	// std::cerr << "W.size() = " << W.size() << std::endl;
 	// int meanSize = 0;
 	// for (int kk = 0; kk < W.size(); kk++) {
@@ -673,7 +673,7 @@ vector<string> consensus_POA( vector<string>& W, unsigned maxMSA){
 
   //~ black_flag_init(argv[0],PROGRAM_VERSION);
 
-	matrix_filename="blosum80.mat";
+	matrix_filename = (char*) path.c_str();
 	if(score_matrix_init==false){
 		if (read_score_matrix(matrix_filename,&score_matrix)<=0){/* READ MATRIX */
 		WARN_MSG(USERR,(ERRTXT,"Error reading matrix file %s.\nExiting", matrix_filename ? matrix_filename: "because none specified"),"$Revision: 1.2.2.9 $");
@@ -773,7 +773,7 @@ void absoluteMAJ_consensus(vector<string>& V){
 
 
 
-vector<string> easy_consensus(vector<string> V, unsigned maxMSA){
+vector<string> easy_consensus(vector<string> V, unsigned maxMSA, string path){
 	uint32_t non_empty(0);
 	//~ absoluteMAJ_consensus(V);
 	if(V.size()==1){
@@ -793,7 +793,7 @@ vector<string> easy_consensus(vector<string> V, unsigned maxMSA){
 	// if(V[iV].size()!=V[0].size()){
 	if(mySet.size() > 1) {
 		// std::cerr << "go consensus_POA" << std::endl;
-		V=consensus_POA(V, maxMSA);
+		V=consensus_POA(V, maxMSA, path);
 		// std::cerr << "ok" << std::endl;
 		// break;
 	} else {
@@ -859,7 +859,7 @@ vector<string> easy_consensus(vector<string> V, unsigned maxMSA){
 
 
 
-vector<vector<string>> global_consensus(const  vector<vector<string>>& V, uint32_t n, unsigned maxMSA){
+vector<vector<string>> global_consensus(const  vector<vector<string>>& V, uint32_t n, unsigned maxMSA, string path){
 	vector<vector<string>> result;
 	string stacked_consensus;
 	for(uint32_t iV(0);iV<V.size();++iV){
@@ -868,7 +868,7 @@ vector<vector<string>> global_consensus(const  vector<vector<string>>& V, uint32
 			continue;
 		}
 		// std::cerr << "go easy_consensus" << std::endl;
-		vector<string> consensus(easy_consensus(V[iV], maxMSA));
+		vector<string> consensus(easy_consensus(V[iV], maxMSA, path));
 		// std::cerr << "ok" << std::endl;
 		//~ cerr<<"EASYCONSENSUS"<<endl;
 		//~ cerr<<consensus[0]<<endl;
@@ -895,7 +895,7 @@ vector<vector<string>> global_consensus(const  vector<vector<string>>& V, uint32
 
 
 
-std::pair<std::vector<std::vector<std::string>>, std::unordered_map<kmer, unsigned>> MSABMAAC(const vector<string>& Reads,uint32_t k, double edge_solidity, unsigned solidThresh, unsigned minAnchors, unsigned maxMSA){
+std::pair<std::vector<std::vector<std::string>>, std::unordered_map<kmer, unsigned>> MSABMAAC(const vector<string>& Reads,uint32_t k, double edge_solidity, unsigned solidThresh, unsigned minAnchors, unsigned maxMSA, string path){
 	int kmer_size(k);
 	//~ vector<string> VTest;;
 	//~ VTest.push_back("CTGACTGACCCCGTACGTCA");
@@ -978,7 +978,7 @@ std::pair<std::vector<std::vector<std::string>>, std::unordered_map<kmer, unsign
 	// vector<vector<string>> result;
 	// result.push_back(Reads);
 	// std::cerr << "7" << std::endl;
-	result=global_consensus(result,Reads.size(), maxMSA);
+	result=global_consensus(result,Reads.size(), maxMSA, path);
 	// std::cerr << "ok" << std::endl;
 	//~ cerr<<"PHASE 6 done"<<endl;
 
