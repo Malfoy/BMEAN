@@ -1,6 +1,3 @@
-[submodule "BOA"]
-	path = BOA
-	url = https://github.com/Malfoy/BOA
 [submodule "Complete-Striped-Smith-Waterman-Library"]
 	path = Complete-Striped-Smith-Waterman-Library
 	url = https://github.com/mengyao/Complete-Striped-Smith-Waterman-Library
