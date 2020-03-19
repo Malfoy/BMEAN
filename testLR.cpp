@@ -4,7 +4,6 @@
 #include <string>
 #include <iterator>
 #include <ctime>
-#include <unordered_map>
 #include <algorithm>
 #include <cmath>
 #include <chrono>
@@ -12,7 +11,6 @@
 #include <fstream>
 #include <string>
 #include <iterator>
-#include <unordered_map>
 #include <set>
 #include <algorithm>
 #include <chrono>
@@ -27,7 +25,7 @@
 #include "utils.h"
 #include <time.h>
 #include "Complete-Striped-Smith-Waterman-Library/src/ssw_cpp.h"
-
+#include "robin_hood.h"
 
 
 
