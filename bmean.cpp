@@ -8,11 +8,11 @@
 #include <stdint.h>
 #include <algorithm>
 #include <math.h>
+#include <unordered_map>
 #include "utils.h"
 #include "bmean.h"
 #include "Complete-Striped-Smith-Waterman-Library/src/ssw_cpp.h"
 #include "global.h"
-#include "robin_hood.h"
 
 extern "C"{
 #include "lpo.h"
@@ -50,8 +50,8 @@ typedef unordered_map<kmer,vector<localisation>> kmer2localisation;
 
 
 
-void fill_index_kmers(const vector<string>& Reads,kmer2localisation& kmer_index,uint32_t kmer_size, robin_hood::unordered_map<kmer, unsigned>& merCounts, unsigned solidThresh){
-	robin_hood::unordered_map<kmer, unsigned> tmpMerCounts;
+void fill_index_kmers(const vector<string>& Reads,kmer2localisation& kmer_index,uint32_t kmer_size, std::unordered_map<kmer, unsigned>& merCounts, unsigned solidThresh){
+	std::unordered_map<kmer, unsigned> tmpMerCounts;
 	string read;
 	uint32_t offsetUpdateKmer=1<<(2*kmer_size);
 	unordered_map<kmer,bool> repeated_kmer;
@@ -895,7 +895,7 @@ vector<vector<string>> global_consensus(const  vector<vector<string>>& V, uint32
 
 
 
-std::pair<std::vector<std::vector<std::string>>, robin_hood::unordered_map<kmer, unsigned>> MSABMAAC(const vector<string>& Reads,uint32_t k, double edge_solidity, unsigned solidThresh, unsigned minAnchors, unsigned maxMSA, string path){
+std::pair<std::vector<std::vector<std::string>>, std::unordered_map<kmer, unsigned>> MSABMAAC(const vector<string>& Reads,uint32_t k, double edge_solidity, unsigned solidThresh, unsigned minAnchors, unsigned maxMSA, string path){
 	int kmer_size(k);
 	//~ vector<string> VTest;;
 	//~ VTest.push_back("CTGACTGACCCCGTACGTCA");
@@ -919,7 +919,7 @@ std::pair<std::vector<std::vector<std::string>>, robin_hood::unordered_map<kmer,
 	//~ exit(0);
 
 	kmer2localisation kmer_index;
-	robin_hood::unordered_map<kmer, unsigned> merCounts;
+	std::unordered_map<kmer, unsigned> merCounts;
 	// std::cerr << "1" << std::endl;
 	fill_index_kmers(Reads,kmer_index,kmer_size,merCounts, solidThresh);
 

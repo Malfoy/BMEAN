@@ -21,11 +21,11 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <unordered_map>
 #include "bmean.h"
 #include "utils.h"
 #include <time.h>
 #include "Complete-Striped-Smith-Waterman-Library/src/ssw_cpp.h"
-#include "robin_hood.h"
 
 
 
