@@ -827,13 +827,13 @@ void absoluteMAJ_consensus(vector<string>& V){
 }
 
 vector<string> consensus_SPOA( vector<string>& W, unsigned maxMSA, string path) {
-	auto alignment_engine = spoa::createAlignmentEngine(static_cast<spoa::AlignmentType>(0), 5, -10, -5, -5);
+	auto alignment_engine = spoa::createAlignmentEngine(static_cast<spoa::AlignmentType>(0), 5, -10, -4, -4);
 
 	auto graph = spoa::createGraph();
 
-	for (const auto& s : W) {
-		auto alignment = alignment_engine->align(s, graph);
-		graph->add_alignment(alignment, s);
+	for (int i = 0; i < W.size(); i++) {
+		auto alignment = alignment_engine->align(W[i], graph);
+		graph->add_alignment(alignment, W[i]);
 	}
 
 	std::vector<std::string> msa;
