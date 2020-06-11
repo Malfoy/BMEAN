@@ -4,3 +4,6 @@
 [submodule "BOA"]
 	path = BOA
 	url = https://github.com/Malfoy/BOA
+[submodule "abPOA"]
+	path = abPOA
+	url = https://github.com/yangao07/abPOA.git
