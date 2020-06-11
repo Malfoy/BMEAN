@@ -639,6 +639,56 @@ vector<string> write_string(LPOSequence_T *seq,int nsymbol,char symbol[],int ibu
 
 
 
+string majority_vote(vector<string> V, string tpl) {
+	string result;
+	for(uint32_t iS(0);iS<V[0].size();++iS){
+		uint32_t cA,cC,cG,cT,cM;
+		cM=cA=cC=cG=cT=0;
+		for(uint32_t iV(0);iV<V.size();++iV){
+			if(V[iV].size()==0){
+				continue;
+			}
+			switch(V[iV][iS]){
+				case 'A': ++cA;break;
+				case 'C': ++cC;break;
+				case 'G': ++cG;break;
+				case 'T': ++cT;break;
+				default:
+				cM++;
+				//~ cerr<<"NOPE"<<V[iV][iS]<<"?"<<endl;
+				//~ cerr<<iS<<" "<<V[iV].size()<<" "<<iV<<" "<<V.size()<<endl;
+			}
+		}
+		if(cM>cA and cM>cC and cM>cT and cM>cG){
+			// result+=('-');
+			continue;
+		}
+		if(cA>cC and cA>cG and cA>cT){
+			result+=('A');
+			continue;
+		}
+		if(cC>cA and cC>cG and cC>cT){
+			result+=('C');
+			continue;
+		}
+		if(cG>cA and cG>cC and cG>cT){
+			result+=('G');
+			continue;
+		}
+		if(cT>cA and cT>cG and cT>cC){
+			result+=('T');
+			continue;
+		}
+		if (tpl[iS] != '-') {
+			result+=(tpl[iS]);
+		}
+		// result+='N';
+		continue;
+		//~ cerr<<"TIE"<<endl;
+		// return V;
+	}
+	return result;
+}
 
 
 vector<string> consensus_POA( vector<string>& W, unsigned maxMSA, string path){
@@ -739,7 +789,11 @@ vector<string> consensus_POA( vector<string>& W, unsigned maxMSA, string path){
 	// cerr<<"CONSENSUS"<<endl;
 	// free(score_matrix.gap_penalty_x);
 	// free(score_matrix.gap_penalty_y);
-	return result;
+	// for (auto s : result) {
+	// 	std::cerr << s << std::endl;
+	// }
+	// std::cerr << std::endl;
+	return {majority_vote(result, W[0])};
 }
 
 
@@ -773,7 +827,7 @@ void absoluteMAJ_consensus(vector<string>& V){
 }
 
 vector<string> consensus_SPOA( vector<string>& W, unsigned maxMSA, string path) {
-	auto alignment_engine = spoa::createAlignmentEngine(static_cast<spoa::AlignmentType>(0), 5, -10, -10, -10);
+	auto alignment_engine = spoa::createAlignmentEngine(static_cast<spoa::AlignmentType>(0), 5, -10, -5, -5);
 
 	auto graph = spoa::createGraph();
 
@@ -785,7 +839,16 @@ vector<string> consensus_SPOA( vector<string>& W, unsigned maxMSA, string path) 
 	std::vector<std::string> msa;
 	graph->generate_multiple_sequence_alignment(msa);
 
+	// std::string consensus = graph->generate_consensus();
+	// return {consensus};
+
+	// for (auto s : msa) {
+	// 	std::cerr << s << std::endl;
+	// }
+	// std::cerr << std::endl;
+
 	return msa;
+	// return {majority_vote(msa, W[0])};
 }
 
 
@@ -810,8 +873,21 @@ vector<string> easy_consensus(vector<string> V, unsigned maxMSA, string path){
 	// if(V[iV].size()!=V[0].size()){
 	if(mySet.size() > 1) {
 		// std::cerr << "go consensus_POA" << std::endl;
-		V=consensus_POA(V, maxMSA, path);
-		V=consensus_SPOA(V, maxMSA, path);
+		// auto Vv =consensus_POA(V, maxMSA, path);
+		V =consensus_SPOA(V, maxMSA, path);
+
+		// for (auto s : Vv) {
+		// 	std::cerr << s << std::endl;
+		// }
+		// std::cerr << std::endl;
+		// for (auto s : Vvv) {
+		// 	std::cerr << s << std::endl;
+		// }
+		// std::cerr << std::endl;
+		// std::cerr << std::endl;
+
+		// return {V[0]};
+
 		// std::cerr << "ok" << std::endl;
 		// break;
 	} else {
