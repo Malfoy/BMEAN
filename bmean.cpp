@@ -13,6 +13,7 @@
 #include "bmean.h"
 #include "Complete-Striped-Smith-Waterman-Library/src/ssw_cpp.h"
 #include "global.h"
+#include "abpoa.h"
 
 extern "C"{
 #include "lpo.h"
@@ -22,6 +23,25 @@ extern "C"{
 #include "poa.h"
 #include "seq_util.h"
 }
+
+unsigned char nst_nt4_table[256] = {
+	4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4, 
+	4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4, 
+	4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,  4, 5 /*'-'*/, 4, 4,
+	4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4, 
+	4, 0, 4, 1,  4, 4, 4, 2,  4, 4, 4, 4,  4, 4, 4, 4, 
+	4, 4, 4, 4,  3, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4, 
+	4, 0, 4, 1,  4, 4, 4, 2,  4, 4, 4, 4,  4, 4, 4, 4, 
+	4, 4, 4, 4,  3, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4, 
+	4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4, 
+	4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4, 
+	4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4, 
+	4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4, 
+	4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4, 
+	4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4, 
+	4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4, 
+	4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4
+};
 
 
 
@@ -498,7 +518,7 @@ vector<vector<string>> split_reads(const vector<kmer>& anchors, const vector<dou
 		if(anchor_position!=-1){
 			string chunk(read.substr(0,anchor_position));
 			//~ if(abs((int)chunk.size()-relative_positions[iA])<get_position(kmer_index,anchors[0],0)*0.5){
-			if(comparable(chunk.size(),get_position(kmer_index,anchors[0],0))){
+			if(comparable(chunk.size(),get_position(kmer_index,anchors[0],0)) && chunk != ""){
 				result[0].push_back(chunk);
 			}
 		}else{
@@ -507,7 +527,7 @@ vector<vector<string>> split_reads(const vector<kmer>& anchors, const vector<dou
 		anchor_position=(get_position(kmer_index,anchors[anchors.size()-1],iR));
 		if(anchor_position!=-1){
 			string chunk(read.substr(anchor_position));
-			if(comparable(chunk.size(),Reads[0].size()-get_position(kmer_index,anchors[anchors.size()-1],0))){
+			if(comparable(chunk.size(),Reads[0].size()-get_position(kmer_index,anchors[anchors.size()-1],0)) && chunk != ""){
 				result[anchors.size()].push_back(chunk);
 			}
 		}else{
@@ -521,7 +541,7 @@ vector<vector<string>> split_reads(const vector<kmer>& anchors, const vector<dou
 					//REGION WITH BOtH ANCHORS
 					string chunk(read.substr(anchor_position1,anchor_position2-anchor_position1));
 					//~ if(abs((int)chunk.size()-relative_positions[iA])<relative_positions[iA]*0.5){
-					if(comparable(chunk.size(), relative_positions[iA])){
+					if(comparable(chunk.size(), relative_positions[iA]) && chunk != ""){
 						result[iA+1].push_back(chunk);
 						//~ cerr<<chunk<<".";
 					}else{
@@ -533,7 +553,7 @@ vector<vector<string>> split_reads(const vector<kmer>& anchors, const vector<dou
 					continue;
 					//GOT THE LEFT ANCHOR
 					string chunk(read.substr(anchor_position1,relative_positions[iA]));
-					if(comparable(chunk.size(),get_position(kmer_index,anchors[0],0))){
+					if(comparable(chunk.size(),get_position(kmer_index,anchors[0],0)) && chunk != ""){
 						result[iA+1].push_back(chunk);
 					}else{
 						//~ cerr<<"ALIEN32"<<endl;
@@ -546,7 +566,7 @@ vector<vector<string>> split_reads(const vector<kmer>& anchors, const vector<dou
 					//GOT THE RIGHT ANCHOR
 					if(anchor_position2>relative_positions[iA]){
 						string chunk(read.substr(anchor_position2-relative_positions[iA],relative_positions[iA]));
-						if(comparable(chunk.size(),get_position(kmer_index,anchors[0],0))){
+						if(comparable(chunk.size(),get_position(kmer_index,anchors[0],0)) && chunk != ""){
 							result[iA+1].push_back(chunk);
 
 						}else{
@@ -771,7 +791,105 @@ void absoluteMAJ_consensus(vector<string>& V){
 	//~ V={V[best_occ]};
 }
 
+vector<string> consensus_abPOA( vector<string>& W, unsigned maxMSA, string path){
+    int i, j, n_seqs = W.size();
+    char** seqs = (char**) malloc(n_seqs * sizeof(char*));
+    for (int i = 0; i < n_seqs; i++) {
+    	seqs[i] = (char*) malloc(W[i].length()+1);
+    	// std::cerr << "cpp : " << W[i].c_str() << std::endl;
+    	strncpy(seqs[i], W[i].c_str(), W[i].length());
+    	seqs[i][W[i].length()] = '\0';
+    }
+    // for (int i = 0; i < n_seqs; i++) {
+    // 	fprintf(stderr, "c : %s\n", seqs[i]);
+    // }
 
+    // initialize variables
+    abpoa_t *ab = abpoa_init();
+    abpoa_para_t *abpt = abpoa_init_para();
+
+    // alignment parameters
+    // abpt->align_mode = 0; // 0:global alignment, 1:extension
+    abpt->match = 5;      // match score
+    abpt->mismatch = 10;   // mismatch penalty
+    // abpt->gap_mode = ABPOA_CONVEX_GAP; // gap penalty mode
+    abpt->gap_open1 = 4;  // gap open penalty #1
+    abpt->gap_ext1 = 4;   // gap extension penalty #1
+    abpt->gap_open2 = 4; // gap open penalty #2
+    abpt->gap_ext2 = 4;   // gap extension penalty #2
+                             // gap_penalty = min{gap_open1 + gap_len * gap_ext1, gap_open2 + gap_len * gap_ext2}
+    // abpt->bw = 10;        // extra band used in adaptive banded DP
+    // abpt->bf = 0.01; 
+     
+    // output options
+    abpt->out_msa = 1; // generate Row-Column multiple sequence alignment(RC-MSA), set 0 to disable
+    abpt->out_cons = 0; // generate consensus sequence, set 0 to disable
+
+    abpoa_post_set_para(abpt);
+
+    // collect sequence length, trasform ACGT to 0123
+    int *seq_lens = (int*)malloc(sizeof(int) * n_seqs);
+    uint8_t **bseqs = (uint8_t**)malloc(sizeof(uint8_t*) * n_seqs);
+    for (i = 0; i < n_seqs; ++i) {
+        seq_lens[i] = strlen(seqs[i]);
+        bseqs[i] = (uint8_t*)malloc(sizeof(uint8_t) * seq_lens[i]);
+        for (j = 0; j < seq_lens[i]; ++j)
+            bseqs[i][j] = nst_nt4_table[(int)seqs[i][j]];
+    }
+
+    // output to stdout
+    // fprintf(stdout, "=== output to stdout ===\n");
+
+    // perform abpoa-msa
+    // abpoa_msa(ab, abpt, n_seqs, seq_lens, bseqs, stdout, NULL, NULL, NULL, NULL, NULL);
+
+    // abpoa_reset_graph(ab, abpt, seq_lens[0]); // reset graph before re-use
+
+    // variables to store result
+    uint8_t **cons_seq; int *cons_l, cons_n=0;
+    uint8_t **msa_seq; int msa_l=0;
+
+    // perform abpoa-msa
+    abpoa_msa(ab, abpt, n_seqs, seq_lens, bseqs, NULL, &cons_seq, &cons_l, &cons_n, &msa_seq, &msa_l);
+
+    // fprintf(stdout, "=== output to variables ===\n");
+    
+    // std::vector<std::string> cons;
+    // for (i = 0; i < cons_n; ++i) {
+    // 	std::string s = "";
+    //     for (j = 0; j < cons_l[i]; ++j)
+    //         s+= "ACGTN"[cons_seq[i][j]];
+    //     cons.push_back(s);
+    // }
+    
+    // fprintf(stdout, ">Multiple_sequence_alignment\n");
+    std::vector<std::string> res;
+    for (i = 0; i < n_seqs; ++i) {
+    	std::string s = "";
+        for (j = 0; j < msa_l; ++j) {
+            s += "ACGTN-"[msa_seq[i][j]];
+        }
+        res.push_back(s);
+        // std::cerr << s << std::endl;
+    }
+
+    if (cons_n) {
+        for (i = 0; i < cons_n; ++i) free(cons_seq[i]); 
+        free(cons_seq); free(cons_l);
+    }
+    if (msa_l) {
+        for (i = 0; i < n_seqs; ++i) free(msa_seq[i]); free(msa_seq);
+    }
+
+    for (i = 0; i < n_seqs; ++i) free(bseqs[i]); free(bseqs); free(seq_lens);
+    abpoa_free(ab, abpt); abpoa_free_para(abpt);
+
+	for (int i = 0; i < n_seqs; i++) {
+		free(seqs[i]);
+	}
+
+	return res;
+}
 
 vector<string> easy_consensus(vector<string> V, unsigned maxMSA, string path){
 	uint32_t non_empty(0);
@@ -793,7 +911,7 @@ vector<string> easy_consensus(vector<string> V, unsigned maxMSA, string path){
 	// if(V[iV].size()!=V[0].size()){
 	if(mySet.size() > 1) {
 		// std::cerr << "go consensus_POA" << std::endl;
-		V=consensus_POA(V, maxMSA, path);
+		V=consensus_abPOA(V, maxMSA, path);
 		// std::cerr << "ok" << std::endl;
 		// break;
 	} else {
