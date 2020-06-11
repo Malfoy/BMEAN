@@ -1,7 +1,7 @@
 # CC=/usr/bin/g++
 CXX= g++
-CFLAGS = -O3 -std=c++11 -lpthread  -IBOA
-LFLAGS =-IBOA
+CFLAGS = -O3 -std=c++11 -lpthread  -IBOA -Ispoa/include
+LFLAGS =-IBOA -Ispoa/include/ -Lspoa/build/lib/ -lspoa
 EXEC=testLR
 OBJS := *.o BOA/align_lpo2.o  BOA/align_lpo_po2.o  BOA/align_score.o  BOA/black_flag.o  BOA/buildup_lpo.o  BOA/create_seq.o  BOA/fasta_format.o  BOA/heaviest_bundle.o  BOA/lpo_format.o  BOA/lpo.o   BOA/msa_format.o  BOA/numeric_data.o  BOA/remove_bundle.o  BOA/seq_util.o  BOA/stringptr.o Complete-Striped-Smith-Waterman-Library/src/*.o
 
@@ -28,10 +28,10 @@ all: $(EXEC)
 
 
 testLR:  testLR.o bmean.o utils.o
-	$(CXX) $(LFLAGS)  $(OBJS) -o $@
+	$(CXX) $(CFLAGS)  $(OBJS) -o $@ $(LFLAGS)
 
 %.o: %.cpp
-	$(CXX) -o $@ -c $< $(CFLAGS)
+	$(CXX) -o $@ -c $< $(CFLAGS) $(LFLAGS)
 
 
 clean:

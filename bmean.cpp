@@ -13,6 +13,7 @@
 #include "bmean.h"
 #include "Complete-Striped-Smith-Waterman-Library/src/ssw_cpp.h"
 #include "global.h"
+#include "spoa/spoa.hpp"
 
 extern "C"{
 #include "lpo.h"
@@ -771,6 +772,22 @@ void absoluteMAJ_consensus(vector<string>& V){
 	//~ V={V[best_occ]};
 }
 
+vector<string> consensus_SPOA( vector<string>& W, unsigned maxMSA, string path) {
+	auto alignment_engine = spoa::createAlignmentEngine(static_cast<spoa::AlignmentType>(0), 5, -10, -10, -10);
+
+	auto graph = spoa::createGraph();
+
+	for (const auto& s : W) {
+		auto alignment = alignment_engine->align(s, graph);
+		graph->add_alignment(alignment, s);
+	}
+
+	std::vector<std::string> msa;
+	graph->generate_multiple_sequence_alignment(msa);
+
+	return msa;
+}
+
 
 
 vector<string> easy_consensus(vector<string> V, unsigned maxMSA, string path){
@@ -794,6 +811,7 @@ vector<string> easy_consensus(vector<string> V, unsigned maxMSA, string path){
 	if(mySet.size() > 1) {
 		// std::cerr << "go consensus_POA" << std::endl;
 		V=consensus_POA(V, maxMSA, path);
+		V=consensus_SPOA(V, maxMSA, path);
 		// std::cerr << "ok" << std::endl;
 		// break;
 	} else {
