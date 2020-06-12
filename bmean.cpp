@@ -15,17 +15,6 @@
 #include "global.h"
 #include "spoa/spoa.hpp"
 
-extern "C"{
-#include "lpo.h"
-#include "msa_format.h"
-#include "align_score.h"
-#include "default.h"
-#include "poa.h"
-#include "seq_util.h"
-}
-
-
-
 //TODO REMOVE HASHTABLES
 
 using namespace std;
@@ -499,7 +488,7 @@ vector<vector<string>> split_reads(const vector<kmer>& anchors, const vector<dou
 		if(anchor_position!=-1){
 			string chunk(read.substr(0,anchor_position));
 			//~ if(abs((int)chunk.size()-relative_positions[iA])<get_position(kmer_index,anchors[0],0)*0.5){
-			if(comparable(chunk.size(),get_position(kmer_index,anchors[0],0))){
+			if(comparable(chunk.size(),get_position(kmer_index,anchors[0],0)) && chunk != ""){
 				result[0].push_back(chunk);
 			}
 		}else{
@@ -508,7 +497,7 @@ vector<vector<string>> split_reads(const vector<kmer>& anchors, const vector<dou
 		anchor_position=(get_position(kmer_index,anchors[anchors.size()-1],iR));
 		if(anchor_position!=-1){
 			string chunk(read.substr(anchor_position));
-			if(comparable(chunk.size(),Reads[0].size()-get_position(kmer_index,anchors[anchors.size()-1],0))){
+			if(comparable(chunk.size(),Reads[0].size()-get_position(kmer_index,anchors[anchors.size()-1],0)) && chunk != ""){
 				result[anchors.size()].push_back(chunk);
 			}
 		}else{
@@ -522,7 +511,7 @@ vector<vector<string>> split_reads(const vector<kmer>& anchors, const vector<dou
 					//REGION WITH BOtH ANCHORS
 					string chunk(read.substr(anchor_position1,anchor_position2-anchor_position1));
 					//~ if(abs((int)chunk.size()-relative_positions[iA])<relative_positions[iA]*0.5){
-					if(comparable(chunk.size(), relative_positions[iA])){
+					if(comparable(chunk.size(), relative_positions[iA]) && chunk != ""){
 						result[iA+1].push_back(chunk);
 						//~ cerr<<chunk<<".";
 					}else{
@@ -534,7 +523,7 @@ vector<vector<string>> split_reads(const vector<kmer>& anchors, const vector<dou
 					continue;
 					//GOT THE LEFT ANCHOR
 					string chunk(read.substr(anchor_position1,relative_positions[iA]));
-					if(comparable(chunk.size(),get_position(kmer_index,anchors[0],0))){
+					if(comparable(chunk.size(),get_position(kmer_index,anchors[0],0)) && chunk != ""){
 						result[iA+1].push_back(chunk);
 					}else{
 						//~ cerr<<"ALIEN32"<<endl;
@@ -547,7 +536,7 @@ vector<vector<string>> split_reads(const vector<kmer>& anchors, const vector<dou
 					//GOT THE RIGHT ANCHOR
 					if(anchor_position2>relative_positions[iA]){
 						string chunk(read.substr(anchor_position2-relative_positions[iA],relative_positions[iA]));
-						if(comparable(chunk.size(),get_position(kmer_index,anchors[0],0))){
+						if(comparable(chunk.size(),get_position(kmer_index,anchors[0],0)) && chunk != ""){
 							result[iA+1].push_back(chunk);
 
 						}else{
@@ -563,239 +552,6 @@ vector<vector<string>> split_reads(const vector<kmer>& anchors, const vector<dou
 	}
 	return result;
 }
-
-
-
-int read_string(vector<string>& Vstr,Sequence_T **seq,int do_switch_case,char **comment, int max_seqs)
-{
-	//~ cerr<<"------------READ---------------"<<endl;
-  int c,nseq=0,length=0;
-  char seq_name[FASTA_NAME_MAX]="",
-  line[SEQ_LENGTH_MAX],seq_title[FASTA_NAME_MAX]="";
-  char *p;
-  stringptr tmp_seq=STRINGPTR_EMPTY_INIT;
-
-  for(uint32_t i(0);i<Vstr.size() and nseq < max_seqs;++i){
-
-	  if(Vstr[i].empty()){
-	  	// std::cerr << "was empty" << std::endl;
-	  	continue;
-	  }
-	   //~ cerr<<Vstr[i]<<endl;
-	// char *cstr = new char[Vstr[i].length() + 1];
-	char *cstr = (char*) malloc(Vstr[i].length() + 1);
-	// char cstr[Vstr[i].length() + 1];
-	strcpy(cstr, Vstr[i].c_str());
-	length=Vstr[i].size();
-	tmp_seq.p=cstr;
-
-	//TODO DELETE
-	if (create_seq(nseq,seq,seq_name,seq_title,tmp_seq.p,do_switch_case)) {
-	  nseq++;
-  	  stringptr_free(&tmp_seq);
-  	}
-  }
-  //~ cerr<<nseq<<endl;
-  return nseq; /* TOTAL NUMBER OF SEQUENCES CREATED */
-}
-
-
-
-vector<string> write_string(LPOSequence_T *seq,int nsymbol,char symbol[],int ibundle){
-  int i(0);
-  vector<string> result;
-  int j,nring=0,iprint;
-  char **seq_pos=NULL,*p=NULL,*include_in_save=NULL;
-
-  nring=xlate_lpo_to_al(seq,nsymbol,symbol,ibundle, '-',&seq_pos,&p,&include_in_save);
-  //~ cerr<<"LPO2al"<<endl;
-  LOOPF (i,seq->nsource_seq) { /* NOW WRITE OUT FASTA FORMAT */
-    //~ if (ibundle<0 || seq->source_seq[i].bundle_id == ibundle) { /* OR JUST THIS BUNDLE*/
-      //~ fprintf(ifile,">%s",seq->source_seq[i].name);
-      //~ iprint=0;
-      //~ LOOPF (j,nring) { /* WRITE OUT 60 CHARACTER SEQUENCE LINES */
-	//~ if (NULL==include_in_save || include_in_save[j]) {
-	  //~ fprintf(ifile,"%s%c",iprint%60? "":"\n", seq_pos[i][j]);
-	  //~ iprint++; /* KEEP COUNT OF PRINTED CHARACTERS */
-	//~ }
-		string nadine(seq_pos[i],nring);
-		result.push_back(nadine);
-		//~ for(uint32_t iN(0);iN<nadine.size();++iN){
-			//~ if(nadine[iN]!='-'){
-				//~ result.push_back(nadine[iN]);
-			//~ }
-		//~ }
-		//~ break;
-      //~ }
-      //~ fputc('\n',ifile);
-    }
-
-  FREE(p); /* DUMP TEMPORARY MEMORY */
-  FREE(include_in_save);
-  FREE(seq_pos);
-  return result;
-}
-
-
-
-
-string majority_vote(vector<string> V, string tpl) {
-	string result;
-	for(uint32_t iS(0);iS<V[0].size();++iS){
-		uint32_t cA,cC,cG,cT,cM;
-		cM=cA=cC=cG=cT=0;
-		for(uint32_t iV(0);iV<V.size();++iV){
-			if(V[iV].size()==0){
-				continue;
-			}
-			switch(V[iV][iS]){
-				case 'A': ++cA;break;
-				case 'C': ++cC;break;
-				case 'G': ++cG;break;
-				case 'T': ++cT;break;
-				default:
-				cM++;
-				//~ cerr<<"NOPE"<<V[iV][iS]<<"?"<<endl;
-				//~ cerr<<iS<<" "<<V[iV].size()<<" "<<iV<<" "<<V.size()<<endl;
-			}
-		}
-		if(cM>cA and cM>cC and cM>cT and cM>cG){
-			// result+=('-');
-			continue;
-		}
-		if(cA>cC and cA>cG and cA>cT){
-			result+=('A');
-			continue;
-		}
-		if(cC>cA and cC>cG and cC>cT){
-			result+=('C');
-			continue;
-		}
-		if(cG>cA and cG>cC and cG>cT){
-			result+=('G');
-			continue;
-		}
-		if(cT>cA and cT>cG and cT>cC){
-			result+=('T');
-			continue;
-		}
-		if (tpl[iS] != '-') {
-			result+=(tpl[iS]);
-		}
-		// result+='N';
-		continue;
-		//~ cerr<<"TIE"<<endl;
-		// return V;
-	}
-	return result;
-}
-
-
-vector<string> consensus_POA( vector<string>& W, unsigned maxMSA, string path){
-	// std::cerr << "W.size() = " << W.size() << std::endl;
-	// int meanSize = 0;
-	// for (int kk = 0; kk < W.size(); kk++) {
-	// 	meanSize += W[kk].length();
-	// }
-	// std::cerr << "meanLength : " << meanSize / W.size() << std::endl;
-	 int i,j,ibundle=0,nframe_seq=0,use_reverse_complement=0;
-	  int nseq=0,do_switch_case=dont_switch_case,do_analyze_bundles=0;
-	  int is_silent = 0;
-	  int nseq_in_list=0,n_input_seqs=0,max_input_seqs=maxMSA;
-	  // max_input_seqs = W.size();
-	  char score_file[256],seq_file[256],po_list_entry_filename[256],*comment=NULL,*al_name="test align";
-	  //~ ResidueScoreMatrix_T score_matrix; /* DEFAULT GAP PENALTIES*/
-	  LPOSequence_T *seq=NULL,*lpo_out=NULL,*frame_seq=NULL,*dna_lpo=NULL,*lpo_in=NULL;
-	  LPOSequence_T **input_seqs=NULL;
-	  FILE *errfile=stderr,*logfile=NULL,*lpo_file_out=NULL,*po_list_file=NULL,*seq_ifile=NULL;
-	  char *print_matrix_letters=NULL,*fasta_out=NULL,*po_out=NULL,*matrix_filename=NULL,
-		*seq_filename=NULL,*frame_dna_filename=NULL,*po_filename=NULL,*po2_filename=NULL,
-		*po_list_filename=NULL, *hbmin=NULL,*numeric_data=NULL,*numeric_data_name="Nmiscall",
-		*dna_to_aa=NULL,*pair_score_file=NULL,*aafreq_file=NULL,*termval_file=NULL,
-		*bold_seq_name=NULL,*subset_file=NULL,*subset2_file=NULL,*rm_subset_file=NULL,
-		*rm_subset2_file=NULL;
-	  float bundling_threshold=0.90;
-	  int exit_code=0,count_sequence_errors=0,please_print_snps=0,
-		report_consensus_seqs=0,report_major_allele=0,use_aggressive_fusion=0;
-	  int show_allele_evidence=0,please_collapse_lines=0,keep_all_links=0;
-	  int remove_listed_seqs=0,remove_listed_seqs2=0,please_report_similarity;
-	  int do_global=1, do_progressive=0,do_preserve_sequence_order=0;
-	  char *reference_seq_name="CONSENS%d",*clustal_out=NULL;
-
-  //~ black_flag_init(argv[0],PROGRAM_VERSION);
-
-	matrix_filename = (char*) path.c_str();
-	if(score_matrix_init==false){
-		if (read_score_matrix(matrix_filename,&score_matrix)<=0){/* READ MATRIX */
-		WARN_MSG(USERR,(ERRTXT,"Error reading matrix file %s.\nExiting", matrix_filename ? matrix_filename: "because none specified"),"$Revision: 1.2.2.9 $");
-		}
-		score_matrix_init=true;
-	}
-
-	//~ cerr<<"GO INSERTION §"<<endl;
-	// std::cerr << "go read_string" << std::endl;
-	nseq = read_string (W, &seq, do_switch_case, &comment, max_input_seqs);
-	if (nseq == 0) {
-		std::vector<string> res;
-		res.push_back("");
-		return res;
-	}
-	// std::cerr << "ok" << std::endl;
-	//~ cerr<<"GO INIT AS LPO"<<endl;
-	CALLOC (input_seqs, max_input_seqs, LPOSequence_T *);
-	// std::cerr << "nseq : " << nseq << std::endl;
-	// std::cerr << "min : " << std::min(nseq, max_input_seqs) << std::endl;
-	for (i=0; i<nseq; i++) {
-		//~ cerr<<"i"<<i<<endl;
-		input_seqs[n_input_seqs++] = &(seq[i]);
-		//~ cerr<<"inputseqnadine"<<endl;
-		// std::cerr << "go initialize_seqs_as_lpo" << std::endl;
-		initialize_seqs_as_lpo(1,&(seq[i]),&score_matrix);//IMPORTANT
-		// std::cerr << "ok" << std::endl;
-		//~ cerr<<"init sucdeees"<<endl;
-		if (n_input_seqs == max_input_seqs) {
-			max_input_seqs *= 2;
-			// std::cerr << "go REALLOC" << std::endl;
-			REALLOC (input_seqs, max_input_seqs, LPOSequence_T *);
-			// std::cerr << "ok" << std::endl;
-		}
-	}
-	//~ cerr<<"GO CONSENSUS"<<endl;
-	// std::cerr << "go buildup_progressive_lpo" << std::endl;
-	lpo_out = buildup_progressive_lpo (n_input_seqs, input_seqs, &score_matrix,use_aggressive_fusion, do_progressive, pair_score_file,matrix_scoring_function, do_global, do_preserve_sequence_order);
-	// std::cerr << "ok" << std::endl;
-	//~ generate_lpo_bundles(lpo_out,bundling_threshold);
-	//~ cerr<<"GO OUTPUT"<<endl;
-	// std::cerr << "go write_string" << std::endl;
-	vector<string> result(write_string(lpo_out,score_matrix.nsymbol,score_matrix.symbol,ibundle));
-	// std::cerr << "ok" << std::endl;
-	//for (int i = 0; i < nseq; i++) {
-	//	char* s = (seq+i)->sequence;
-	//	delete[] s;
-	//}
-	for (i=0;i<n_input_seqs;i++) {
-	    for (j=0;j<nseq;j++) {
-	      if (input_seqs[i]==&(seq[j]))
-	        break;
-	    }
-	    // std::cerr << "go free_lpo_sequence" << std::endl;
-	    free_lpo_sequence(input_seqs[i],(j==nseq));
-	    // std::cerr << "ok" << std::endl;
-	  }
-	  FREE (input_seqs);
-	FREE(seq);
-
-	//~ cerr<<result<<endl;
-	// cerr<<"CONSENSUS"<<endl;
-	// free(score_matrix.gap_penalty_x);
-	// free(score_matrix.gap_penalty_y);
-	// for (auto s : result) {
-	// 	std::cerr << s << std::endl;
-	// }
-	// std::cerr << std::endl;
-	return {majority_vote(result, W[0])};
-}
-
 
 void absoluteMAJ_consensus(vector<string>& V){
 	sort(V.begin(),V.end());
@@ -831,9 +587,16 @@ vector<string> consensus_SPOA( vector<string>& W, unsigned maxMSA, string path) 
 
 	auto graph = spoa::createGraph();
 
+	std::set<std::string> present;
+
 	for (int i = 0; i < W.size(); i++) {
-		auto alignment = alignment_engine->align(W[i], graph);
-		graph->add_alignment(alignment, W[i]);
+		if (present.find(W[i]) == present.end()) {
+			for (int j = 0; j < count(W.begin(), W.end(), W[i]); j++) {
+				auto alignment = alignment_engine->align(W[i], graph);
+				graph->add_alignment(alignment, W[i]);
+			}
+			present.insert(W[i]);
+		}
 	}
 
 	std::vector<std::string> msa;
@@ -873,7 +636,6 @@ vector<string> easy_consensus(vector<string> V, unsigned maxMSA, string path){
 	// if(V[iV].size()!=V[0].size()){
 	if(mySet.size() > 1) {
 		// std::cerr << "go consensus_POA" << std::endl;
-		// auto Vv =consensus_POA(V, maxMSA, path);
 		V =consensus_SPOA(V, maxMSA, path);
 
 		// for (auto s : Vv) {
