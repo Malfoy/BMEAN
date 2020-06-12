@@ -587,31 +587,15 @@ vector<string> consensus_SPOA( vector<string>& W, unsigned maxMSA, string path) 
 
 	auto graph = spoa::createGraph();
 
-	std::set<std::string> present;
-
 	for (int i = 0; i < W.size(); i++) {
-		if (present.find(W[i]) == present.end()) {
-			for (int j = 0; j < count(W.begin(), W.end(), W[i]); j++) {
-				auto alignment = alignment_engine->align(W[i], graph);
-				graph->add_alignment(alignment, W[i]);
-			}
-			present.insert(W[i]);
-		}
+		auto alignment = alignment_engine->align(W[i], graph);
+		graph->add_alignment(alignment, W[i]);
 	}
 
 	std::vector<std::string> msa;
 	graph->generate_multiple_sequence_alignment(msa);
 
-	// std::string consensus = graph->generate_consensus();
-	// return {consensus};
-
-	// for (auto s : msa) {
-	// 	std::cerr << s << std::endl;
-	// }
-	// std::cerr << std::endl;
-
 	return msa;
-	// return {majority_vote(msa, W[0])};
 }
 
 
