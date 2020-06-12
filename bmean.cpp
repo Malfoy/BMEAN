@@ -12,7 +12,6 @@
 #include "utils.h"
 #include "bmean.h"
 #include "Complete-Striped-Smith-Waterman-Library/src/ssw_cpp.h"
-#include "global.h"
 #include "spoa/spoa.hpp"
 
 //TODO REMOVE HASHTABLES
