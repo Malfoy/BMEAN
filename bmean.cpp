@@ -13,6 +13,7 @@
 #include "bmean.h"
 #include "Complete-Striped-Smith-Waterman-Library/src/ssw_cpp.h"
 #include "spoa/spoa.hpp"
+#include "robin_hood.h"
 
 //TODO REMOVE HASHTABLES
 
@@ -35,18 +36,18 @@ struct score_chain {
 
 
 
-typedef unordered_map<kmer,vector<localisation>> kmer2localisation;
+typedef robin_hood::unordered_map<kmer,vector<localisation>> kmer2localisation;
 
 
 
-void fill_index_kmers(const vector<string>& Reads,kmer2localisation& kmer_index,uint32_t kmer_size, std::unordered_map<kmer, unsigned>& merCounts, unsigned solidThresh){
-	std::unordered_map<kmer, unsigned> tmpMerCounts;
+void fill_index_kmers(const vector<string>& Reads,kmer2localisation& kmer_index,uint32_t kmer_size, robin_hood::unordered_map<kmer, unsigned>& merCounts, unsigned solidThresh){
+	robin_hood::unordered_map<kmer, unsigned> tmpMerCounts;
 	string read;
 	uint32_t offsetUpdateKmer=1<<(2*kmer_size);
-	unordered_map<kmer,bool> repeated_kmer;
+	robin_hood::unordered_map<kmer,bool> repeated_kmer;
 	localisation here({0,0});
 	for(uint32_t iR(0);iR<Reads.size();++iR){
-		unordered_map<kmer,uint32_t> local_kmer;
+		robin_hood::unordered_map<kmer,uint32_t> local_kmer;
 		here.position=0;
 		here.read_id=iR;
 		read=Reads[iR];
@@ -84,8 +85,8 @@ void fill_index_kmers(const vector<string>& Reads,kmer2localisation& kmer_index,
 
 
 
-unordered_map<kmer,uint32_t> filter_index_kmers(kmer2localisation& kmer_index, double amount){
-	unordered_map<kmer,uint32_t> result;
+robin_hood::unordered_map<kmer,uint32_t> filter_index_kmers(kmer2localisation& kmer_index, double amount){
+	robin_hood::unordered_map<kmer,uint32_t> result;
 	//~ cerr<<"kmer INdex size before cleaning"<<kmer_index.size()<<endl;
 	vector<kmer> to_suppress;
 	vector<uint32_t> read_ids;
@@ -186,7 +187,7 @@ int anchors_ordered_according2reads(const kmer kmer1,const kmer kmer2,  kmer2loc
 
 
 
-score_chain longest_ordered_chain_from_anchors( kmer2localisation& kmer_index, unordered_map<uint,score_chain>& best_chain_computed, uint32_t start, const vector<kmer>& template_read,double edge_solidity){
+score_chain longest_ordered_chain_from_anchors( kmer2localisation& kmer_index, robin_hood::unordered_map<uint,score_chain>& best_chain_computed, uint32_t start, const vector<kmer>& template_read,double edge_solidity){
 	if(best_chain_computed.count(start)==1){
 		return best_chain_computed[start];
 	}
@@ -236,7 +237,7 @@ vector<kmer> get_template( kmer2localisation& kmer_index,const string& read,int 
 
 
 vector<kmer> longest_ordered_chain( kmer2localisation& kmer_index,const vector<kmer>& template_read, double edge_solidity){
-	unordered_map<uint,score_chain> best_chain_computed;
+	robin_hood::unordered_map<uint,score_chain> best_chain_computed;
     vector<kmer> result;
     int32_t max_chain(0),max_score(0);
 	int32_t next_anchor(-1);
@@ -327,7 +328,7 @@ pair<double,double> deciles( vector<uint32_t>& V){
 
 
 
-vector<double> average_distance_next_anchor(kmer2localisation& kmer_index,  vector<kmer>& anchors,unordered_map<kmer,uint32_t>& k_count, bool clean){
+vector<double> average_distance_next_anchor(kmer2localisation& kmer_index,  vector<kmer>& anchors,robin_hood::unordered_map<kmer,uint32_t>& k_count, bool clean){
 	vector<double> result;
 	vector<uint32_t> v_dis;
 	vector<kmer> curated_anchors;
@@ -734,7 +735,7 @@ vector<vector<string>> global_consensus(const  vector<vector<string>>& V, uint32
 
 
 
-std::pair<std::vector<std::vector<std::string>>, std::unordered_map<kmer, unsigned>> MSABMAAC(const vector<string>& Reads,uint32_t k, double edge_solidity, unsigned solidThresh, unsigned minAnchors, unsigned maxMSA, string path){
+std::pair<std::vector<std::vector<std::string>>, robin_hood::unordered_map<kmer, unsigned>> MSABMAAC(const vector<string>& Reads,uint32_t k, double edge_solidity, unsigned solidThresh, unsigned minAnchors, unsigned maxMSA, string path){
 	int kmer_size(k);
 	//~ vector<string> VTest;;
 	//~ VTest.push_back("CTGACTGACCCCGTACGTCA");
@@ -760,7 +761,7 @@ std::pair<std::vector<std::vector<std::string>>, std::unordered_map<kmer, unsign
 
 
 	kmer2localisation kmer_index;
-	std::unordered_map<kmer, unsigned> merCounts;
+	robin_hood::unordered_map<kmer, unsigned> merCounts;
 	// std::cerr << "1" << std::endl;
 	fill_index_kmers(Reads,kmer_index,kmer_size,merCounts, solidThresh);
 	// std::cerr << "ok" << std::endl;
